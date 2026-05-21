@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import SelectPeopleModal from './SelectPeopleModal';
 
 export default function EditGroupModal({ group, contacts, onClose, onSave, onDelete }) {
+  const [name, setName] = useState(group.name);
   const [memberIds, setMemberIds] = useState([...group.memberIds]);
   const [showSelectPeople, setShowSelectPeople] = useState(false);
 
@@ -17,11 +18,12 @@ export default function EditGroupModal({ group, contacts, onClose, onSave, onDel
   };
 
   const handleSave = () => {
-    onSave({ ...group, memberIds });
+    if (!name.trim()) return;
+    onSave({ ...group, name: name.trim(), memberIds });
   };
 
   const handleDelete = () => {
-    if (window.confirm(`Delete group "${group.name}"?`)) {
+    if (window.confirm(`Are you sure you want to delete group "${group.name}"?`)) {
       onDelete(group.id);
     }
   };
@@ -30,40 +32,60 @@ export default function EditGroupModal({ group, contacts, onClose, onSave, onDel
     <>
       <div className="modal-overlay" onClick={onClose}>
         <div className="modal" style={{ maxWidth: 480 }} onClick={(e) => e.stopPropagation()}>
-          <div className="modal-title">Edit Group</div>
+          <div className="modal-title">Edit Group Details</div>
 
-          <div style={{ marginBottom: '0.75rem' }}>
+          <div className="form-group">
+            <label className="form-label-sub">Group Name</label>
+            <input
+              className="form-input"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Group Name"
+            />
+          </div>
+
+          <div className="splits-section-header" style={{ marginTop: '1rem', marginBottom: '0.5rem' }}>
+            <span>Group Members ({memberIds.length}):</span>
             <button
               className="btn btn-dark btn-sm"
               onClick={() => setShowSelectPeople(true)}
             >
-              Add People +
+              + Add Members
             </button>
           </div>
 
-          {memberIds.map((id) => {
-            const contact = getContact(id);
-            if (!contact) return null;
-            return (
-              <div key={id} className="contact-row">
-                <span>
-                  <span className="contact-name">{contact.name}</span>{' '}
-                  <span className="contact-phone">({contact.phone})</span>
-                </span>
-                <button className="btn btn-light btn-sm" onClick={() => handleRemove(id)}>
-                  Remove
-                </button>
-              </div>
-            );
-          })}
+          <div className="group-members-list-preview" style={{ maxHeight: '200px', overflowY: 'auto', marginBottom: '1rem' }}>
+            {memberIds.map((id) => {
+              const contact = getContact(id);
+              if (!contact) return null;
+              return (
+                <div key={id} className="contact-row" style={{ padding: '0.5rem 0' }}>
+                  <span>
+                    <span className="contact-name">{contact.name}</span>{' '}
+                    <span className="contact-phone">({contact.phone})</span>
+                  </span>
+                  <button 
+                    className="btn btn-red btn-sm" 
+                    onClick={() => handleRemove(id)}
+                    style={{ padding: '2px 8px', fontSize: '0.75rem' }}
+                  >
+                    Remove
+                  </button>
+                </div>
+              );
+            })}
 
-          {memberIds.length === 0 && (
-            <div style={{ color: '#aaa', padding: '0.75rem 0' }}>No members yet.</div>
-          )}
+            {memberIds.length === 0 && (
+              <div style={{ color: '#aaa', padding: '0.75rem 0', textAlign: 'center' }}>No members in this group yet.</div>
+            )}
+          </div>
 
-          <div className="modal-footer-split">
-            <button className="btn btn-red" onClick={handleDelete}>Delete</button>
-            <button className="btn btn-dark" onClick={handleSave}>Save</button>
+          <div className="modal-footer-split" style={{ marginTop: '1.5rem' }}>
+            <button className="btn btn-red" onClick={handleDelete}>Delete Group</button>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button className="btn btn-light" onClick={onClose}>Cancel</button>
+              <button className="btn btn-dark" onClick={handleSave}>Save Group</button>
+            </div>
           </div>
         </div>
       </div>

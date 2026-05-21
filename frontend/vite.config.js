@@ -9,11 +9,18 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/api': {
+      '/person': {
         target: 'http://localhost:8080',
         changeOrigin: true,
-        secure: false,
-      }
+      },
+      '/group': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
+      '/entry': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
     }
   }
 })

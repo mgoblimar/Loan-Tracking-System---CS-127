@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const LOAN_TYPES = ['Straight', 'Installment', 'Group'];
-const FREQUENCIES = ['Weekly', 'Bi-Weekly', 'Monthly'];
+const FREQUENCIES = ['Weekly', 'Monthly'];
 const SPLIT_METHODS = ['Divide Percent', 'Divide Value'];
 
 export default function AddLoanModal({ onClose, onAdd, contacts, groups }) {
@@ -15,25 +15,39 @@ export default function AddLoanModal({ onClose, onAdd, contacts, groups }) {
     startDate: '',
     dueDate: '',
     totalTerms: '',
-    termsPaid: '',
+    termsPaid: '0',
     groupId: '',
     splitMethod: 'Divide Percent',
     splits: {},
     direction: 'owe',
     notes: '',
     receipt: null,
+    receiptPreviewUrl: null,
   });
 
+  const [splitTotals, setSplitTotals] = useState({ current: 0, target: 0, isValid: true });
+
   const set = (key, val) => setForm((f) => ({ ...f, [key]: val }));
+
+  // Check if selected start date is earlier than today (local time)
+  const isStartDateInPast = () => {
+    if (!form.startDate) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const start = new Date(form.startDate);
+    return start < today;
+  };
 
   // When group changes, build splits object
   const handleGroupChange = (groupId) => {
     set('groupId', groupId);
-    const grp = groups.find((g) => g.id === parseInt(groupId));
+    const grp = groups.find((g) => String(g.id) === String(groupId));
     if (grp) {
       const splits = {};
       grp.memberIds.forEach((id) => { splits[id] = ''; });
       setForm((f) => ({ ...f, groupId, splits }));
+    } else {
+      setForm((f) => ({ ...f, groupId, splits: {} }));
     }
   };
 
@@ -43,51 +57,120 @@ export default function AddLoanModal({ onClose, onAdd, contacts, groups }) {
 
   const getGroupMembers = () => {
     if (!form.groupId) return [];
-    const grp = groups.find((g) => g.id === parseInt(form.groupId));
+    const grp = groups.find((g) => String(g.id) === String(form.groupId));
     if (!grp) return [];
-    return grp.memberIds.map((id) => contacts.find((c) => c.id === id)).filter(Boolean);
+    return grp.memberIds.map((id) => contacts.find((c) => String(c.id) === String(id))).filter(Boolean);
   };
 
   const handleReceipt = (e) => {
     const file = e.target.files[0];
-    if (file) set('receipt', file.name);
+    if (file) {
+      const previewUrl = URL.createObjectURL(file);
+      setForm((f) => ({
+        ...f,
+        receipt: file.name,
+        receiptPreviewUrl: previewUrl,
+        rawFile: file
+      }));
+    }
   };
+
+  const handleSplitEqually = () => {
+    const members = getGroupMembers();
+    if (members.length === 0) return;
+    const totalAmount = parseFloat(form.amount) || 0;
+    const splits = {};
+
+    if (form.splitMethod === 'Divide Percent') {
+      const basePct = Math.floor(100 / members.length);
+      const remainder = 100 - basePct * members.length;
+      members.forEach((m, i) => {
+        splits[m.id] = (basePct + (i < remainder ? 1 : 0)).toString();
+      });
+    } else {
+      const baseVal = Math.floor(totalAmount / members.length);
+      let remainder = totalAmount - baseVal * members.length;
+      // round to 2 decimals
+      const baseValRounded = parseFloat((totalAmount / members.length).toFixed(2));
+      members.forEach((m, i) => {
+        splits[m.id] = baseValRounded.toString();
+      });
+    }
+    setForm((f) => ({ ...f, splits }));
+  };
+
+  const groupMembers = getGroupMembers();
+
+  // Calculate split totals whenever amount, splits, splitMethod, or groupMembers change
+  useEffect(() => {
+    const amountVal = parseFloat(form.amount) || 0;
+    let sum = 0;
+    Object.values(form.splits).forEach((v) => {
+      sum += parseFloat(v) || 0;
+    });
+
+    if (form.splitMethod === 'Divide Percent') {
+      setSplitTotals({
+        current: sum,
+        target: 100,
+        isValid: sum === 100
+      });
+    } else {
+      setSplitTotals({
+        current: sum,
+        target: amountVal,
+        isValid: Math.abs(sum - amountVal) < 0.05
+      });
+    }
+  }, [form.amount, form.splits, form.splitMethod, form.groupId]);
 
   const handleSubmit = () => {
     if (!form.name || !form.amount) return;
+
+    // Additional validations
+    if (form.type === 'Group' && groupMembers.length > 0) {
+      if (!splitTotals.isValid) {
+        alert(
+          form.splitMethod === 'Divide Percent'
+            ? `Splits must total exactly 100% (currently ${splitTotals.current}%)`
+            : `Splits must total exactly the loan amount ₱${splitTotals.target.toLocaleString()} (currently ₱${splitTotals.current.toLocaleString()})`
+        );
+        return;
+      }
+    }
+
     const loan = {
       name: form.name,
       type: form.type,
       amount: parseFloat(form.amount),
-      lenderId: form.lenderId ? parseInt(form.lenderId) : null,
-      borrowerId: form.borrowerId ? parseInt(form.borrowerId) : null,
+      lenderId: form.lenderId || null,
+      borrowerId: form.borrowerId || null,
       direction: form.direction || 'owe',
       startDate: form.startDate,
       dueDate: form.dueDate || null,
       frequency: form.frequency,
       totalTerms: parseInt(form.totalTerms) || 1,
-      termsPaid: parseInt(form.termsPaid) || 0,
-      groupId: form.groupId ? parseInt(form.groupId) : null,
+      termsPaid: isStartDateInPast() ? parseInt(form.termsPaid) || 0 : 0,
+      groupId: form.groupId || null,
       splits: form.splits,
       splitMethod: form.splitMethod,
       notes: form.notes,
-      receipt: form.receipt,
+      receipt: form.receiptPreviewUrl || form.receipt,
     };
-    onAdd(loan);
+    onAdd(loan, form.rawFile);
   };
-
-  const groupMembers = getGroupMembers();
 
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-title">New Loan</div>
+        <div className="modal-title">New Loan Application</div>
 
         <div className="form-group">
           <input className="form-input" placeholder="Entry Name" value={form.name} onChange={(e) => set('name', e.target.value)} />
         </div>
+        
         <div className="form-group">
-          <input className="form-input" placeholder="Amount" type="number" value={form.amount} onChange={(e) => set('amount', e.target.value)} />
+          <input className="form-input" placeholder="Amount (₱)" type="number" value={form.amount} onChange={(e) => set('amount', e.target.value)} />
         </div>
 
         {/* Type + Direction row */}
@@ -99,8 +182,8 @@ export default function AddLoanModal({ onClose, onAdd, contacts, groups }) {
           </div>
           <div className="select-wrapper" style={{ flex: 1 }}>
             <select className="form-select" value={form.direction} onChange={(e) => set('direction', e.target.value)}>
-              <option value="owe">I owe them</option>
-              <option value="owed">They owe me</option>
+              <option value="owe">I owe them (Lendee)</option>
+              <option value="owed">They owe me (Lender)</option>
             </select>
           </div>
         </div>
@@ -108,15 +191,13 @@ export default function AddLoanModal({ onClose, onAdd, contacts, groups }) {
         {/* Straight fields */}
         {form.type === 'Straight' && (
           <>
-            <div className="form-group">
+            <div className="form-row">
               <div className="select-wrapper">
                 <select className="form-select" value={form.lenderId} onChange={(e) => set('lenderId', e.target.value)}>
                   <option value="">Lender</option>
                   {contacts.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
               </div>
-            </div>
-            <div className="form-group">
               <div className="select-wrapper">
                 <select className="form-select" value={form.borrowerId} onChange={(e) => set('borrowerId', e.target.value)}>
                   <option value="">Borrower</option>
@@ -124,9 +205,16 @@ export default function AddLoanModal({ onClose, onAdd, contacts, groups }) {
                 </select>
               </div>
             </div>
-            <div className="form-row">
-              <input className="form-input" type="date" placeholder="Start Date" value={form.startDate} onChange={(e) => set('startDate', e.target.value)} />
-              <input className="form-input" type="date" placeholder="Due Date" value={form.dueDate} onChange={(e) => set('dueDate', e.target.value)} />
+            
+            <div className="form-row-dates">
+              <div className="date-field">
+                <label className="form-label-sub">Start Date</label>
+                <input className="form-input" type="date" value={form.startDate} onChange={(e) => set('startDate', e.target.value)} />
+              </div>
+              <div className="date-field">
+                <label className="form-label-sub">Due Date</label>
+                <input className="form-input" type="date" value={form.dueDate} onChange={(e) => set('dueDate', e.target.value)} />
+              </div>
             </div>
           </>
         )}
@@ -134,15 +222,13 @@ export default function AddLoanModal({ onClose, onAdd, contacts, groups }) {
         {/* Installment fields */}
         {form.type === 'Installment' && (
           <>
-            <div className="form-group">
+            <div className="form-row">
               <div className="select-wrapper">
                 <select className="form-select" value={form.lenderId} onChange={(e) => set('lenderId', e.target.value)}>
                   <option value="">Lender</option>
                   {contacts.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
               </div>
-            </div>
-            <div className="form-group">
               <div className="select-wrapper">
                 <select className="form-select" value={form.borrowerId} onChange={(e) => set('borrowerId', e.target.value)}>
                   <option value="">Borrower</option>
@@ -150,20 +236,39 @@ export default function AddLoanModal({ onClose, onAdd, contacts, groups }) {
                 </select>
               </div>
             </div>
-            <div className="form-group">
+            
+            <div className="form-row-three">
               <div className="select-wrapper">
+                <label className="form-label-sub">Payment Terms Frequency</label>
                 <select className="form-select" value={form.frequency} onChange={(e) => set('frequency', e.target.value)}>
                   {FREQUENCIES.map((f) => <option key={f}>{f}</option>)}
                 </select>
               </div>
+              <div>
+                <label className="form-label-sub">Start Date</label>
+                <input className="form-input" type="date" value={form.startDate} onChange={(e) => set('startDate', e.target.value)} />
+              </div>
+              <div>
+                <label className="form-label-sub">Total Terms</label>
+                <input className="form-input" type="number" placeholder="e.g. 10" value={form.totalTerms} onChange={(e) => set('totalTerms', e.target.value)} />
+              </div>
             </div>
-            <div className="form-row">
-              <input className="form-input" type="date" placeholder="Start Date" value={form.startDate} onChange={(e) => set('startDate', e.target.value)} />
-              <input className="form-input" type="number" placeholder="Terms Paid" value={form.termsPaid} onChange={(e) => set('termsPaid', e.target.value)} />
-            </div>
-            <div className="form-group">
-              <input className="form-input" type="number" placeholder="Total Terms" value={form.totalTerms} onChange={(e) => set('totalTerms', e.target.value)} />
-            </div>
+
+            {/* Dynamic Terms Paid: Only shown if start date is earlier than today */}
+            {isStartDateInPast() && (
+              <div className="form-group dynamic-fade-in">
+                <label className="form-label-sub alert-label-sub">📅 Start date is in the past. How many terms have been paid so far?</label>
+                <input 
+                  className="form-input" 
+                  type="number" 
+                  min="0" 
+                  max={form.totalTerms || 100}
+                  placeholder="Terms paid so far" 
+                  value={form.termsPaid} 
+                  onChange={(e) => set('termsPaid', e.target.value)} 
+                />
+              </div>
+            )}
           </>
         )}
 
@@ -184,37 +289,75 @@ export default function AddLoanModal({ onClose, onAdd, contacts, groups }) {
               </div>
             </div>
 
-            {groupMembers.map((member) => (
-              <div className="member-split-row" key={member.id}>
-                <input className="form-input" value={member.name} readOnly />
-                <input
-                  className="form-input"
-                  placeholder={form.splitMethod === 'Divide Percent' ? '0%' : '₱0'}
-                  value={form.splits[member.id] || ''}
-                  onChange={(e) => handleSplitChange(member.id, e.target.value)}
-                />
-              </div>
-            ))}
+            {groupMembers.length > 0 && (
+              <div className="splits-section-box">
+                <div className="splits-section-header">
+                  <span>Assign Group splits:</span>
+                  <button type="button" className="btn-split-equal" onClick={handleSplitEqually}>
+                    ⚖️ Split Equally
+                  </button>
+                </div>
+                
+                {groupMembers.map((member) => (
+                  <div className="member-split-row" key={member.id}>
+                    <span className="member-name-label">{member.name}</span>
+                    <div className="split-input-wrap">
+                      {form.splitMethod === 'Divide Percent' ? '' : '₱ '}
+                      <input
+                        className="form-input split-number-input"
+                        type="number"
+                        placeholder={form.splitMethod === 'Divide Percent' ? '0' : '0.00'}
+                        value={form.splits[member.id] || ''}
+                        onChange={(e) => handleSplitChange(member.id, e.target.value)}
+                      />
+                      {form.splitMethod === 'Divide Percent' ? ' %' : ''}
+                    </div>
+                  </div>
+                ))}
 
-            <div className="form-row">
-              <input className="form-input" type="date" placeholder="Start Date" value={form.startDate} onChange={(e) => set('startDate', e.target.value)} />
-              <input className="form-input" type="date" placeholder="Due Date" value={form.dueDate} onChange={(e) => set('dueDate', e.target.value)} />
+                <div className={`split-validator-card ${splitTotals.isValid ? 'valid' : 'invalid'}`}>
+                  <span>Total Split: <strong>{splitTotals.current}</strong> / {form.splitMethod === 'Divide Percent' ? '100%' : `₱${splitTotals.target.toLocaleString()}`}</span>
+                  <span className="validator-indicator">{splitTotals.isValid ? '✓ Matches perfectly' : '⚠️ Must match exactly'}</span>
+                </div>
+              </div>
+            )}
+
+            <div className="form-row-dates">
+              <div className="date-field">
+                <label className="form-label-sub">Start Date</label>
+                <input className="form-input" type="date" value={form.startDate} onChange={(e) => set('startDate', e.target.value)} />
+              </div>
+              <div className="date-field">
+                <label className="form-label-sub">Due Date</label>
+                <input className="form-input" type="date" value={form.dueDate} onChange={(e) => set('dueDate', e.target.value)} />
+              </div>
             </div>
           </>
         )}
 
-        {/* Receipt */}
-        <div style={{ marginBottom: '0.75rem' }}>
-          <label>
+        <div className="form-group notes-group">
+          <textarea className="form-input notes-textarea" placeholder="Add custom notes..." value={form.notes} onChange={(e) => set('notes', e.target.value)} rows="2" />
+        </div>
+
+        {/* Receipt Upload with Premium Preview */}
+        <div className="receipt-upload-box">
+          <label className="btn btn-light btn-sm file-input-label">
             <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleReceipt} />
-            <span className="receipt-btn">Add Receipt +</span>
+            📸 Add Receipt Image
           </label>
-          {form.receipt && <div className="receipt-preview">📎 {form.receipt}</div>}
+          {form.receiptPreviewUrl ? (
+            <div className="receipt-preview-thumbnail-container">
+              <img src={form.receiptPreviewUrl} alt="Receipt Upload" className="receipt-preview-thumbnail" />
+              <div className="receipt-filename-lbl">📎 {form.receipt}</div>
+            </div>
+          ) : (
+            form.receipt && <div className="receipt-preview">📎 {form.receipt}</div>
+          )}
         </div>
 
         <div className="modal-footer">
           <button className="btn btn-light" onClick={onClose}>Cancel</button>
-          <button className="btn btn-dark" onClick={handleSubmit}>Add Loan</button>
+          <button className="btn btn-dark" onClick={handleSubmit}>Create Loan Entry</button>
         </div>
       </div>
     </div>
