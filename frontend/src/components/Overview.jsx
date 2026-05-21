@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import AddLoanModal from './AddLoanModal';
+import EditLoanModal from './EditLoanModal';
 import PayNowModal from './PayNowModal';
 import { entryApi, installmentApi, paymentApi, allocationApi } from '../api';
 
@@ -20,6 +21,7 @@ export default function Overview({ loans, setLoans, contacts, groups, activePers
   const [lightboxImage, setLightboxImage] = useState(null);
   const [removingPaymentId, setRemovingPaymentId] = useState(null);
   const [deletingLoanId, setDeletingLoanId] = useState(null);
+  const [showEditLoan, setShowEditLoan] = useState(null); // loan object being edited
   const sortRef = useRef(null);
 
   useEffect(() => {
@@ -363,6 +365,71 @@ export default function Overview({ loans, setLoans, contacts, groups, activePers
       alert('Failed to delete loan: ' + (err.response?.data?.message || err.message));
     } finally {
       setDeletingLoanId(null);
+    }
+  };
+
+  const handleEditLoan = async (updatedFields, rawFile) => {
+    const original = showEditLoan;
+    try {
+      // Reconstruct lender/borrower/group from original (locked — not editable)
+      let lender = null;
+      let borrowerPerson = null;
+      let borrowerGroup = null;
+
+      if (original.type !== 'Group') {
+        if (original.direction === 'owe') {
+          lender = { id: original.lenderId };
+          borrowerPerson = { id: activePersonId };
+        } else {
+          lender = { id: activePersonId };
+          borrowerPerson = { id: original.borrowerId };
+        }
+      } else {
+        lender = original.lenderId ? { id: original.lenderId } : { id: activePersonId };
+        borrowerGroup = { id: original.groupId };
+      }
+
+      const transactionType = original.type === 'Straight'
+        ? 'STRAIGHT_EXPENSE'
+        : original.type === 'Installment'
+          ? 'INSTALLMENT_EXPENSE'
+          : 'GROUP_EXPENSE';
+
+      const updatePayload = {
+        name: updatedFields.name,
+        description: updatedFields.notes || '',
+        notes: serializeNotes(updatedFields.notes, updatedFields.dueDate),
+        dateBorrowed: updatedFields.startDate,
+        amountBorrowed: updatedFields.amount,
+        amountRemaining: Math.max(0, updatedFields.amount - original.paidAmount),
+        transactionType,
+        lender,
+        borrowerPerson,
+        borrowerGroup,
+      };
+
+      await entryApi.update(original.id, updatePayload);
+
+      // For installment: also update the InstallmentDetail
+      if (original.type === 'Installment') {
+        const terms = updatedFields.totalTerms || original.totalTerms || 1;
+        await installmentApi.updateDetail(original.id, {
+          paymentFrequency: updatedFields.frequency === 'Monthly' ? 'MONTHLY' : 'WEEKLY',
+          paymentTerms: terms,
+          paymentAmountPerTerm: updatedFields.amount / terms,
+          notes: updatedFields.notes || '',
+        });
+      }
+
+      if (rawFile) {
+        await entryApi.uploadReceipt(original.id, rawFile);
+      }
+
+      setShowEditLoan(null);
+      refreshAllData();
+    } catch (err) {
+      console.error('Error updating loan:', err);
+      alert('Failed to update loan: ' + (err.response?.data?.message || err.message));
     }
   };
 
@@ -750,6 +817,13 @@ export default function Overview({ loans, setLoans, contacts, groups, activePers
                     >
                       {deletingLoanId === loan.id ? 'Deleting…' : '🗑 Delete Loan'}
                     </button>
+                    <button
+                      className="btn btn-light btn-sm"
+                      onClick={(e) => { e.stopPropagation(); setShowEditLoan(loan); }}
+                      title="Edit this loan entry"
+                    >
+                      ✏️ Edit
+                    </button>
                     <div style={{ flex: 1 }} />
                     {loan.type === 'Installment' && (
                       <button
@@ -817,6 +891,16 @@ export default function Overview({ loans, setLoans, contacts, groups, activePers
           contacts={contacts}
           groups={groups}
           activePersonId={activePersonId}
+        />
+      )}
+
+      {showEditLoan && (
+        <EditLoanModal
+          loan={showEditLoan}
+          onClose={() => setShowEditLoan(null)}
+          onEdit={handleEditLoan}
+          contacts={contacts}
+          groups={groups}
         />
       )}
 

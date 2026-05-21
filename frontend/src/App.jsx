@@ -121,6 +121,7 @@ export default function App() {
 
         return {
           id: entry.id,
+          referenceId: entry.referenceId,
           name: entry.name,
           type: entry.transactionType === 'STRAIGHT_EXPENSE' ? 'Straight' : entry.transactionType === 'INSTALLMENT_EXPENSE' ? 'Installment' : 'Group',
           amount: parseFloat(entry.amountBorrowed),
