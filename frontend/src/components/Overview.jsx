@@ -101,15 +101,11 @@ export default function Overview({ loans, setLoans, contacts, groups, activePers
           return;
         }
         borrowerGroup = { id: loan.groupId };
-        if (loan.direction === 'owe') {
-          if (!loan.lenderId) {
-            alert('Please select a Lender');
-            return;
-          }
-          lender = { id: loan.lenderId };
-        } else {
-          lender = { id: activePersonId };
+        if (!loan.lenderId) {
+          alert('Please select a Lender');
+          return;
         }
+        lender = { id: loan.lenderId };
       }
 
       const dateBorrowed = loan.startDate || new Date().toISOString().split('T')[0];
@@ -537,6 +533,7 @@ export default function Overview({ loans, setLoans, contacts, groups, activePers
           onAdd={handleAddLoan}
           contacts={contacts}
           groups={groups}
+          activePersonId={activePersonId}
         />
       )}
 

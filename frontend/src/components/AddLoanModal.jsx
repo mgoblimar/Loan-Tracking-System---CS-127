@@ -4,7 +4,7 @@ const LOAN_TYPES = ['Straight', 'Installment', 'Group'];
 const FREQUENCIES = ['Weekly', 'Monthly'];
 const SPLIT_METHODS = ['Divide Percent', 'Divide Value'];
 
-export default function AddLoanModal({ onClose, onAdd, contacts, groups }) {
+export default function AddLoanModal({ onClose, onAdd, contacts, groups, activePersonId }) {
   const [form, setForm] = useState({
     name: '',
     amount: '',
@@ -28,6 +28,33 @@ export default function AddLoanModal({ onClose, onAdd, contacts, groups }) {
   const [splitTotals, setSplitTotals] = useState({ current: 0, target: 0, isValid: true });
 
   const set = (key, val) => setForm((f) => ({ ...f, [key]: val }));
+
+  const activePersonName = contacts.find((c) => String(c.id) === String(activePersonId))?.name || 'Self';
+
+  // Automatically sync lenderId and borrowerId based on selected type and direction
+  useEffect(() => {
+    if (form.type === 'Group') {
+      setForm((f) => ({
+        ...f,
+        lenderId: f.lenderId || activePersonId || '',
+        borrowerId: '',
+      }));
+    } else {
+      if (form.direction === 'owe') {
+        setForm((f) => ({
+          ...f,
+          borrowerId: activePersonId || '',
+          lenderId: f.lenderId === activePersonId ? '' : f.lenderId,
+        }));
+      } else {
+        setForm((f) => ({
+          ...f,
+          lenderId: activePersonId || '',
+          borrowerId: f.borrowerId === activePersonId ? '' : f.borrowerId,
+        }));
+      }
+    }
+  }, [form.type, form.direction, activePersonId]);
 
   // Check if selected start date is earlier than today (local time)
   const isStartDateInPast = () => {
@@ -88,9 +115,6 @@ export default function AddLoanModal({ onClose, onAdd, contacts, groups }) {
         splits[m.id] = (basePct + (i < remainder ? 1 : 0)).toString();
       });
     } else {
-      const baseVal = Math.floor(totalAmount / members.length);
-      let remainder = totalAmount - baseVal * members.length;
-      // round to 2 decimals
       const baseValRounded = parseFloat((totalAmount / members.length).toFixed(2));
       members.forEach((m, i) => {
         splits[m.id] = baseValRounded.toString();
@@ -127,7 +151,60 @@ export default function AddLoanModal({ onClose, onAdd, contacts, groups }) {
   const handleSubmit = () => {
     if (!form.name || !form.amount) return;
 
-    // Additional validations
+    // Start Date is required for all loans
+    if (!form.startDate) {
+      alert('Please select a Start Date');
+      return;
+    }
+
+    // Due Date is required for Straight and Group loans
+    if ((form.type === 'Straight' || form.type === 'Group') && !form.dueDate) {
+      alert('Please select a Due Date');
+      return;
+    }
+
+    // Due Date must not be earlier than Start Date
+    if (form.dueDate && form.startDate) {
+      const start = new Date(form.startDate);
+      const due = new Date(form.dueDate);
+      start.setHours(0, 0, 0, 0);
+      due.setHours(0, 0, 0, 0);
+      if (due < start) {
+        alert('Due Date cannot be before the Start Date');
+        return;
+      }
+    }
+
+    // For Installments, totalTerms must be a valid positive integer > 0
+    if (form.type === 'Installment') {
+      const terms = parseInt(form.totalTerms);
+      if (isNaN(terms) || terms <= 0) {
+        alert('Total Terms must be a number greater than 0');
+        return;
+      }
+    }
+
+    // Standard field validations
+    if (form.type !== 'Group') {
+      if (form.direction === 'owe' && !form.lenderId) {
+        alert('Please select a Lender');
+        return;
+      }
+      if (form.direction === 'owed' && !form.borrowerId) {
+        alert('Please select a Borrower');
+        return;
+      }
+    } else {
+      if (!form.groupId) {
+        alert('Please select a Borrower Group');
+        return;
+      }
+      if (!form.lenderId) {
+        alert('Please select a Lender');
+        return;
+      }
+    }
+
     if (form.type === 'Group' && groupMembers.length > 0) {
       if (!splitTotals.isValid) {
         alert(
@@ -180,30 +257,67 @@ export default function AddLoanModal({ onClose, onAdd, contacts, groups }) {
               {LOAN_TYPES.map((t) => <option key={t}>{t}</option>)}
             </select>
           </div>
-          <div className="select-wrapper" style={{ flex: 1 }}>
-            <select className="form-select" value={form.direction} onChange={(e) => set('direction', e.target.value)}>
-              <option value="owe">I owe them (Lendee)</option>
-              <option value="owed">They owe me (Lender)</option>
-            </select>
-          </div>
+          {form.type !== 'Group' && (
+            <div className="select-wrapper" style={{ flex: 1 }}>
+              <select className="form-select" value={form.direction} onChange={(e) => set('direction', e.target.value)}>
+                <option value="owe">I owe them (Lendee)</option>
+                <option value="owed">They owe me (Lender)</option>
+              </select>
+            </div>
+          )}
         </div>
 
         {/* Straight fields */}
         {form.type === 'Straight' && (
           <>
             <div className="form-row">
-              <div className="select-wrapper">
-                <select className="form-select" value={form.lenderId} onChange={(e) => set('lenderId', e.target.value)}>
-                  <option value="">Lender</option>
-                  {contacts.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
-              </div>
-              <div className="select-wrapper">
-                <select className="form-select" value={form.borrowerId} onChange={(e) => set('borrowerId', e.target.value)}>
-                  <option value="">Borrower</option>
-                  {contacts.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
-              </div>
+              {form.direction === 'owe' ? (
+                <>
+                  <div className="select-wrapper">
+                    <label className="form-label-sub">Lender (Owed by You)</label>
+                    <select className="form-select" value={form.lenderId} onChange={(e) => set('lenderId', e.target.value)}>
+                      <option value="">Select Lender</option>
+                      {contacts.filter(c => String(c.id) !== String(activePersonId)).map((c) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="select-wrapper">
+                    <label className="form-label-sub">Borrower (Lendee)</label>
+                    <input 
+                      type="text" 
+                      className="form-input" 
+                      value={`👤 You (${activePersonName})`} 
+                      readOnly 
+                      disabled 
+                      style={{ background: '#f1f5f9', color: '#475569', border: '1.5px dashed #cbd5e1', cursor: 'not-allowed' }} 
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="select-wrapper">
+                    <label className="form-label-sub">Lender</label>
+                    <input 
+                      type="text" 
+                      className="form-input" 
+                      value={`👤 You (${activePersonName})`} 
+                      readOnly 
+                      disabled 
+                      style={{ background: '#f1f5f9', color: '#475569', border: '1.5px dashed #cbd5e1', cursor: 'not-allowed' }} 
+                    />
+                  </div>
+                  <div className="select-wrapper">
+                    <label className="form-label-sub">Borrower (Lendee)</label>
+                    <select className="form-select" value={form.borrowerId} onChange={(e) => set('borrowerId', e.target.value)}>
+                      <option value="">Select Borrower</option>
+                      {contacts.filter(c => String(c.id) !== String(activePersonId)).map((c) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </>
+              )}
             </div>
             
             <div className="form-row-dates">
@@ -223,18 +337,53 @@ export default function AddLoanModal({ onClose, onAdd, contacts, groups }) {
         {form.type === 'Installment' && (
           <>
             <div className="form-row">
-              <div className="select-wrapper">
-                <select className="form-select" value={form.lenderId} onChange={(e) => set('lenderId', e.target.value)}>
-                  <option value="">Lender</option>
-                  {contacts.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
-              </div>
-              <div className="select-wrapper">
-                <select className="form-select" value={form.borrowerId} onChange={(e) => set('borrowerId', e.target.value)}>
-                  <option value="">Borrower</option>
-                  {contacts.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
-              </div>
+              {form.direction === 'owe' ? (
+                <>
+                  <div className="select-wrapper">
+                    <label className="form-label-sub">Lender (Owed by You)</label>
+                    <select className="form-select" value={form.lenderId} onChange={(e) => set('lenderId', e.target.value)}>
+                      <option value="">Select Lender</option>
+                      {contacts.filter(c => String(c.id) !== String(activePersonId)).map((c) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="select-wrapper">
+                    <label className="form-label-sub">Borrower (Lendee)</label>
+                    <input 
+                      type="text" 
+                      className="form-input" 
+                      value={`👤 You (${activePersonName})`} 
+                      readOnly 
+                      disabled 
+                      style={{ background: '#f1f5f9', color: '#475569', border: '1.5px dashed #cbd5e1', cursor: 'not-allowed' }} 
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="select-wrapper">
+                    <label className="form-label-sub">Lender</label>
+                    <input 
+                      type="text" 
+                      className="form-input" 
+                      value={`👤 You (${activePersonName})`} 
+                      readOnly 
+                      disabled 
+                      style={{ background: '#f1f5f9', color: '#475569', border: '1.5px dashed #cbd5e1', cursor: 'not-allowed' }} 
+                    />
+                  </div>
+                  <div className="select-wrapper">
+                    <label className="form-label-sub">Borrower (Lendee)</label>
+                    <select className="form-select" value={form.borrowerId} onChange={(e) => set('borrowerId', e.target.value)}>
+                      <option value="">Select Borrower</option>
+                      {contacts.filter(c => String(c.id) !== String(activePersonId)).map((c) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </>
+              )}
             </div>
             
             <div className="form-row-three">
@@ -275,14 +424,30 @@ export default function AddLoanModal({ onClose, onAdd, contacts, groups }) {
         {/* Group fields */}
         {form.type === 'Group' && (
           <>
-            <div className="type-row">
-              <div className="select-wrapper" style={{ flex: 1 }}>
+            <div className="form-row">
+              <div className="select-wrapper">
+                <label className="form-label-sub">Lender (Person)</label>
+                <select className="form-select" value={form.lenderId} onChange={(e) => set('lenderId', e.target.value)}>
+                  <option value="">Select Lender</option>
+                  {contacts.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {String(c.id) === String(activePersonId) ? `👤 You (${c.name})` : c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="select-wrapper">
+                <label className="form-label-sub">Borrower Group</label>
                 <select className="form-select" value={form.groupId} onChange={(e) => handleGroupChange(e.target.value)}>
-                  <option value="">Group Select</option>
+                  <option value="">Select Group</option>
                   {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
                 </select>
               </div>
-              <div className="select-wrapper" style={{ flex: 1 }}>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label-sub">Split Method</label>
+              <div className="select-wrapper">
                 <select className="form-select" value={form.splitMethod} onChange={(e) => set('splitMethod', e.target.value)}>
                   {SPLIT_METHODS.map((s) => <option key={s}>{s}</option>)}
                 </select>

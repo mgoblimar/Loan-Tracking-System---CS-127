@@ -1,6 +1,7 @@
 package com.pookiebear278.loan_tracker.domain;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.UuidGenerator;
@@ -18,6 +19,7 @@ public class GroupMember {
     @Column(name = "id", unique = true, updatable = false)
     private String id;
 
+    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "group_id", nullable = false)
     private Group group;
