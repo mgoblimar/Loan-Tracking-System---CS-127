@@ -2,7 +2,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/loan_tracker
     username: postgres
-    password: ${DB_PASSWORD}
+    password: julius28
 
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect

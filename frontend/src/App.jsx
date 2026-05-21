@@ -71,12 +71,26 @@ export default function App() {
         let totalTerms = 1;
         let termsPaid = formattedPayments.length;
         let installmentNotes = '';
+        let termAmount = 0;
+        let nextTermAmount = 0;
         if (entry.transactionType === 'INSTALLMENT_EXPENSE') {
           const inst = await installmentApi.getDetail(entry.id).catch(() => null);
           if (inst) {
             frequency = inst.paymentFrequency === 'MONTHLY' ? 'Monthly' : 'Weekly';
             totalTerms = inst.paymentTerms || 1;
             installmentNotes = inst.notes || '';
+            termAmount = parseFloat(inst.paymentAmountPerTerm);
+            
+            const totalPaid = formattedPayments.reduce((sum, p) => sum + p.amount, 0);
+            const k = Math.floor(totalPaid / termAmount);
+            termsPaid = k;
+            
+            if (k < totalTerms) {
+              const allocatedToNext = totalPaid - (k * termAmount);
+              nextTermAmount = termAmount - allocatedToNext;
+            } else {
+              nextTermAmount = 0;
+            }
           }
         }
 
@@ -123,6 +137,8 @@ export default function App() {
           frequency,
           totalTerms,
           termsPaid,
+          termAmount,
+          nextTermAmount,
           splits,
           splitMethod,
         };
@@ -248,6 +264,7 @@ export default function App() {
             loans={loans} 
             setLoans={setLoans} 
             contacts={contacts} 
+            groups={groups}
             activePersonId={activePersonId}
             refreshAllData={refreshAllData}
           />
