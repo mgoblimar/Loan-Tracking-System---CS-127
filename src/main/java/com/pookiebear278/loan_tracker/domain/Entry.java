@@ -50,7 +50,7 @@ public class Entry {
     private Group borrowerGroup;
 
     @ManyToOne
-    @JoinColumn(name = "lender_id")
+    @JoinColumn(name = "lender_id", nullable = false)
     private Person lender;
 
     @Column (nullable = false, precision = 19, scale = 4)
@@ -65,6 +65,8 @@ public class Entry {
 
     private String notes;
     private String paymentNotes;
+
+
     private String receipt;
 
     @Column(updatable = false)

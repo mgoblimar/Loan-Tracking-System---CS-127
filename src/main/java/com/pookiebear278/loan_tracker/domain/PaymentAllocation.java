@@ -1,6 +1,7 @@
 package com.pookiebear278.loan_tracker.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.pookiebear278.loan_tracker.domain.enums.PaymentAllocationStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.UuidGenerator;
@@ -38,4 +39,9 @@ public class PaymentAllocation {
 
     private String notes;
 
+    @Transient
+    private BigDecimal percentageOfTotal;
+
+    @Transient
+    private PaymentAllocationStatus status;
 }
