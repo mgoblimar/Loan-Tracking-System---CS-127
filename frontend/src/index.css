@@ -19,20 +19,85 @@
 
 body {
   font-family: 'Inter', sans-serif;
-  background: radial-gradient(circle at top left, #1e1b4b, var(--bg-dark));
   color: var(--text-main);
-  min-height: 100vh;
+  margin: 0;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--bg-dark);
+}
+
+/* Landscape PC Layout */
+.app-layout {
   display: flex;
-  justify-content: center;
-  align-items: center;
+  width: 100vw;
+  height: 100vh;
+}
+
+/* Sidebar Styling */
+.sidebar {
+  width: 280px;
+  background: rgba(15, 23, 42, 0.95);
+  border-right: 1px solid var(--border);
+  padding: 2rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  z-index: 10;
+  box-shadow: 4px 0 15px rgba(0, 0, 0, 0.2);
+}
+
+.sidebar h2 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  background: linear-gradient(to right, #60a5fa, #c084fc);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 3rem;
+  padding-left: 0.5rem;
+}
+
+.nav-menu {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.nav-item {
+  padding: 1rem 1.25rem;
+  border-radius: 10px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+.nav-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-main);
+}
+
+.nav-item.active {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(139, 92, 246, 0.15));
+  color: var(--primary);
+  border-left: 3px solid var(--primary);
+}
+
+/* Main Content Area */
+.main-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2.5rem 3rem;
+  background: radial-gradient(circle at top left, #1e1b4b, var(--bg-dark));
 }
 
 .dashboard-container {
   width: 100%;
-  max-width: 1200px;
-  padding: 2rem;
+  max-width: 1600px;
+  margin: 0 auto;
 }
 
+/* Header & Cards */
 .header {
   display: flex;
   justify-content: space-between;
@@ -41,22 +106,19 @@ body {
 }
 
 .header h1 {
-  font-size: 2.5rem;
-  font-weight: 700;
-  background: linear-gradient(to right, #60a5fa, #c084fc);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  animation: fadeIn 1s ease-in-out;
+  font-size: 2.25rem;
+  font-weight: 600;
+  animation: fadeIn 0.8s ease-in-out;
 }
 
 .btn-primary {
   background: linear-gradient(135deg, var(--primary), var(--accent));
   color: white;
   border: none;
-  padding: 0.75rem 1.5rem;
+  padding: 0.875rem 1.75rem;
   border-radius: 8px;
   font-size: 1rem;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
   box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
@@ -69,7 +131,7 @@ body {
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 1.5rem;
   margin-bottom: 3rem;
 }
@@ -78,7 +140,7 @@ body {
   background: var(--bg-card);
   backdrop-filter: blur(12px);
   border: 1px solid var(--border);
-  padding: 1.5rem;
+  padding: 1.5rem 2rem;
   border-radius: 16px;
   transition: transform 0.3s;
   animation: slideUp 0.6s ease-out backwards;
@@ -94,11 +156,11 @@ body {
   font-size: 0.875rem;
   text-transform: uppercase;
   letter-spacing: 1px;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
 }
 
 .stat-value {
-  font-size: 2rem;
+  font-size: 2.25rem;
   font-weight: 700;
 }
 
@@ -112,13 +174,14 @@ body {
   backdrop-filter: blur(12px);
   border: 1px solid var(--border);
   border-radius: 16px;
-  padding: 2rem;
+  padding: 2.5rem;
   animation: slideUp 0.8s ease-out backwards;
 }
 
 .recent-activity h2 {
   font-size: 1.5rem;
   margin-bottom: 1.5rem;
+  font-weight: 600;
 }
 
 .activity-list {
@@ -128,7 +191,8 @@ body {
 .activity-item {
   display: flex;
   justify-content: space-between;
-  padding: 1rem 0;
+  align-items: center;
+  padding: 1.25rem 0;
   border-bottom: 1px solid var(--border);
 }
 
@@ -137,7 +201,7 @@ body {
 }
 
 .activity-info h4 {
-  font-size: 1rem;
+  font-size: 1.125rem;
   margin-bottom: 0.25rem;
 }
 
@@ -148,6 +212,7 @@ body {
 
 .activity-amount {
   font-weight: 600;
+  font-size: 1.125rem;
   color: #34d399;
 }
 
