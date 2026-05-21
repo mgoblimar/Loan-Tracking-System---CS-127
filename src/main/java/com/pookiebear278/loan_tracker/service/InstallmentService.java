@@ -26,6 +26,7 @@ public class InstallmentService {
     private final InstallmentDetailRepo installmentDetailRepo;
     private final EntryService entryService;
     private final PaymentRepo paymentRepo;
+    private final PaymentService paymentService;
 
     public InstallmentDetail getInstallmentDetail(String entryId) {
         InstallmentDetail detail = installmentDetailRepo.findByEntryId(entryId).orElseThrow(() -> new NotFoundException("Installment detail not found for entry: " + entryId));
@@ -48,7 +49,13 @@ public class InstallmentService {
 
         detail.setPaymentAmountPerTerm(perTerm);
 
-        return installmentDetailRepo.save(detail);
+        entry.setInstallmentDetail(detail);
+        InstallmentDetail saved = installmentDetailRepo.save(detail);
+
+        // Calculate initial next due date
+        paymentService.updateNextDueDateForInstallment(entry, null, null);
+
+        return saved;
     }
 
 
@@ -69,14 +76,24 @@ public class InstallmentService {
 
         existing.setPaymentAmountPerTerm(perTerm);
 
-        return installmentDetailRepo.save(existing);
+        InstallmentDetail saved = installmentDetailRepo.save(existing);
+
+        // Recalculate next due date
+        paymentService.updateNextDueDateForInstallment(entry, null, null);
+
+        return saved;
     }
 
     public InstallmentDetail skipTerm(String entryId){
         InstallmentDetail detail = installmentDetailRepo.findByEntryId(entryId).orElseThrow(() -> new NotFoundException("Installment detail not found for entry: " + entryId));
 
         detail.setSkippedTerms(detail.getSkippedTerms() + 1);
-        return installmentDetailRepo.save(detail);
+        InstallmentDetail saved = installmentDetailRepo.save(detail);
+
+        // Recalculate next due date since skipped terms changed
+        paymentService.updateNextDueDateForInstallment(detail.getEntry(), null, null);
+
+        return saved;
     }
 
     public List<InstallmentStatus> getAllTermsStatuses(String entryId){

@@ -12,7 +12,10 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import com.pookiebear278.loan_tracker.domain.enums.TransactionType;
+import com.pookiebear278.loan_tracker.domain.InstallmentDetail;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -73,6 +76,8 @@ public class PaymentService {
             entry.setStatus(PaymentStatus.PARTIALLY_PAID);
         }
 
+        updateNextDueDateForInstallment(entry, payment, null);
+
         return paymentRepo.save(payment);
     }
 
@@ -96,10 +101,67 @@ public class PaymentService {
         }
 
         paymentRepo.delete(payment);
+        updateNextDueDateForInstallment(entry, null, payment.getId());
     }
 
+    public void updateNextDueDateForInstallment(Entry entry, Payment newPayment, String excludePaymentId) {
+        if (entry.getTransactionType() != TransactionType.INSTALLMENT_EXPENSE) {
+            return;
+        }
 
+        InstallmentDetail detail = entry.getInstallmentDetail();
+        if (detail == null) {
+            return;
+        }
 
+        List<Payment> payments = paymentRepo.findByEntryId(entry.getId());
 
+        // Sum existing payments excluding deleted
+        BigDecimal totalPaid = payments.stream()
+                .filter(p -> excludePaymentId == null || !p.getId().equals(excludePaymentId))
+                .map(Payment::getPaymentAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+        // Add the new payment if it's not already in the database list
+        if (newPayment != null && payments.stream().noneMatch(p -> p.getId() != null && p.getId().equals(newPayment.getId()))) {
+            totalPaid = totalPaid.add(newPayment.getPaymentAmount());
+        }
+
+        BigDecimal perTerm = detail.getPaymentAmountPerTerm();
+        if (perTerm == null || perTerm.compareTo(BigDecimal.ZERO) == 0) {
+            return;
+        }
+
+        // Calculate fully paid terms: k = totalPaid / perTerm
+        int k = totalPaid.divide(perTerm, 0, RoundingMode.DOWN).intValue();
+
+        // Account for skipped terms in next due date calculation
+        int totalShift = k + detail.getSkippedTerms();
+
+        // The next due date is the due date of Term totalShift + 1
+        LocalDate nextDueDate = null;
+        if (totalShift < detail.getPaymentTerms()) {
+            nextDueDate = switch (detail.getPaymentFrequency()) {
+                case MONTHLY -> detail.getStartDate().plusMonths(totalShift + 1);
+                case WEEKLY -> detail.getStartDate().plusWeeks(totalShift + 1);
+            };
+        }
+
+        // Extract existing notes
+        String currentNotes = entry.getNotes();
+        String actualNotes = "";
+        if (currentNotes != null) {
+            if (currentNotes.startsWith("[Due: ") && currentNotes.contains("]")) {
+                actualNotes = currentNotes.substring(currentNotes.indexOf("]") + 1).trim();
+            } else {
+                actualNotes = currentNotes;
+            }
+        }
+
+        if (nextDueDate != null) {
+            entry.setNotes("[Due: " + nextDueDate.toString() + "] " + actualNotes);
+        } else {
+            entry.setNotes(actualNotes);
+        }
+    }
 }

@@ -1255,4 +1255,440 @@ body {
   border-color: #bbf7d0 !important;
 }
 
+/* ── Filter Chips ── */
+.filter-chips {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.filter-chip {
+  padding: 0.3rem 0.85rem;
+  border-radius: 999px;
+  border: 1.5px solid #e0e0e0;
+  background: #fff;
+  color: #555;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.15s ease;
+}
+
+.filter-chip:hover {
+  border-color: #aaa;
+  color: #111;
+}
+
+.filter-chip.active {
+  background: #111;
+  border-color: #111;
+  color: #fff;
+}
+
+/* ── Active Filter Bar ── */
+.active-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: #f0f4ff;
+  border: 1px solid #c7d7fb;
+  border-radius: 8px;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.8rem;
+  color: #3451b2;
+  margin-bottom: 0.75rem;
+}
+
+.clear-filter-btn {
+  background: none;
+  border: none;
+  color: #e53e3e;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-left: auto;
+  padding: 0;
+  font-family: 'Inter', sans-serif;
+  transition: opacity 0.15s;
+}
+
+.clear-filter-btn:hover {
+  opacity: 0.7;
+}
+
+/* ── Sort Direction Button ── */
+.sort-dir-btn {
+  padding: 0.4rem 0.65rem !important;
+  font-size: 0.9rem !important;
+  font-weight: 700 !important;
+  min-width: 32px;
+}
+
+/* ── Sort Menu Section Label ── */
+.sort-menu-section-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #aaa;
+  font-weight: 700;
+  padding: 0.4rem 0.9rem 0.2rem;
+}
+
+.sort-menu-dir {
+  color: #888;
+  font-size: 0.8rem;
+  font-weight: 400;
+}
+
+/* ── Remove Payment Button ── */
+.btn-remove-payment {
+  background: none;
+  border: 1.5px solid #fed7d7;
+  color: #c53030;
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.btn-remove-payment:hover:not(:disabled) {
+  background: #fff5f5;
+  border-color: #fc8181;
+}
+
+.btn-remove-payment:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Delete Loan Danger Button ── */
+.btn-danger-outline {
+  background: #fff;
+  border: 1.5px solid #fed7d7;
+  color: #c53030;
+}
+
+.btn-danger-outline:hover:not(:disabled) {
+  background: #fff5f5;
+  border-color: #fc8181;
+  color: #9b2c2c;
+}
+
+.btn-danger-outline:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Updated timeline table columns (5 cols now: date / amount / method / receipt / action) ── */
+.timeline-table-header,
+.timeline-table-row {
+  grid-template-columns: 1.1fr 1fr 0.9fr 1fr 0.8fr;
+}
+
+/* ── Previous Payments Section (Payments page) ── */
+.prev-payments-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 1.5rem;
+  border: 1px solid #e8e8e8;
+  margin-top: 1.25rem;
+}
+
+.prev-payments-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+
+.prev-payments-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #111;
+}
+
+.prev-payments-sub {
+  font-size: 0.8rem;
+  color: #888;
+  margin-top: 2px;
+}
+
+.prev-payments-table {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #eaeaea;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.prev-payments-row {
+  display: grid;
+  grid-template-columns: 1.2fr 1.8fr 1.4fr 0.9fr 0.9fr 1.1fr 0.8fr;
+  align-items: center;
+  padding: 0.7rem 1rem;
+  font-size: 0.82rem;
+  border-bottom: 1px solid #f5f5f5;
+  transition: background 0.12s;
+  gap: 0.25rem;
+}
+
+.prev-payments-row:last-child {
+  border-bottom: none;
+}
+
+.prev-payments-row:not(.prev-payments-head):hover {
+  background: #fafafa;
+}
+
+.prev-payments-head {
+  background: #f5f5f5;
+  font-weight: 700;
+  font-size: 0.72rem;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  border-bottom: 1px solid #eaeaea;
+}
+
+.pp-date {
+  color: #555;
+  font-size: 0.78rem;
+}
+
+.pp-loan-name {
+  font-weight: 600;
+  color: #1a202c;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pp-contact {
+  color: #4a5568;
+}
+
+.pp-amount {
+  font-weight: 700;
+  font-size: 0.88rem;
+}
+
+/* Loan type badge in payments list */
+.pp-type-badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  display: inline-block;
+}
+
+.pp-type-straight {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.pp-type-installment {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.pp-type-group {
+  background: #f3e8ff;
+  color: #7c3aed;
+}
+
+/* Direction badge */
+.pay-dir-badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.pay-dir-owe {
+  background: #fff5f5;
+  color: #c53030;
+  border: 1px solid #fed7d7;
+}
+
+.pay-dir-owed {
+  background: #f0fff4;
+  color: #276749;
+  border: 1px solid #c6f6d5;
+}
+
+.prev-payments-empty {
+  text-align: center;
+  color: #aaa;
+  padding: 2.5rem 1rem;
+  font-size: 0.9rem;
+}
+
+/* ── PayNow Info Box ── */
+.paynow-info-box {
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  background: #fafafa;
+  border-radius: 10px;
+  border: 1px solid #eee;
+}
+
+.paynow-info-name {
+  font-weight: 600;
+  margin-bottom: 4px;
+  font-size: 0.95rem;
+}
+
+.paynow-info-rows {
+  font-size: 0.85rem;
+  color: #555;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* ── Pay in Full Button ── */
+.btn-pay-in-full {
+  background: #f0fdf4;
+  border: 1.5px solid #bbf7d0;
+  color: #166534;
+  border-radius: 999px;
+  padding: 0.3rem 0.85rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.btn-pay-in-full:hover {
+  background: #dcfce7;
+  border-color: #86efac;
+}
+
+/* ── Amount header row (label + Pay in Full side by side) ── */
+.paynow-amount-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.35rem;
+}
+
+/* ── Group Pay Section ── */
+.group-pay-section {
+  margin-bottom: 1rem;
+}
+
+.group-pay-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.group-pay-table {
+  border: 1px solid #eaeaea;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 0.6rem;
+}
+
+.group-pay-row {
+  display: grid;
+  grid-template-columns: 1.6fr 1.2fr 1.4fr;
+  align-items: center;
+  padding: 0.6rem 0.85rem;
+  font-size: 0.83rem;
+  border-bottom: 1px solid #f5f5f5;
+  gap: 0.5rem;
+}
+
+.group-pay-row:last-child {
+  border-bottom: none;
+}
+
+.group-pay-head {
+  background: #f5f5f5;
+  font-weight: 700;
+  font-size: 0.7rem;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  border-bottom: 1px solid #eaeaea;
+}
+
+.group-pay-me {
+  background: #fffbeb;
+  opacity: 0.85;
+}
+
+.gp-member-name {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 600;
+  color: #1a202c;
+}
+
+.gp-you-badge {
+  background: #e0f2fe;
+  color: #0369a1;
+  font-size: 0.6rem;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.gp-share {
+  color: #4a5568;
+  font-size: 0.82rem;
+}
+
+.gp-amount-input {
+  padding: 0.4rem 0.6rem !important;
+  font-size: 0.83rem !important;
+  margin: 0 !important;
+}
+
+.gp-excluded-label {
+  font-size: 0.72rem;
+  color: #999;
+  font-style: italic;
+}
+
+.gp-total-row {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.55rem 0.85rem;
+  font-size: 0.83rem;
+  color: #2d3748;
+}
+
+.gp-over-warning {
+  color: #c53030;
+  font-weight: 700;
+}
+
+/* ── Multi-segment Progress Bar for Group Loans ── */
+.progress-bar-track.multi-segment {
+  display: flex;
+}
+.progress-bar-fill.yellow {
+  background: #ecc94b;
+  color: #1e293b;
+  justify-content: center;
+  padding-right: 0;
+  text-align: center;
+}
+
 
