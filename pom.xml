@@ -27,7 +27,7 @@
         <url/>
     </scm>
     <properties>
-        <java.version>26</java.version>
+        <java.version>22</java.version>
     </properties>
     <dependencies>
         <dependency>
@@ -145,7 +145,7 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.14.1</version>
                 <configuration>
-                    <release>26</release>
+                    <release>22</release>
                     <annotationProcessorPaths>
                                     <path>
                                         <groupId>org.projectlombok</groupId>
