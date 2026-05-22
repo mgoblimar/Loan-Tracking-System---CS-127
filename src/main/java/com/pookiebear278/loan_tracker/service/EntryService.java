@@ -16,7 +16,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.math.BigDecimal;
 import java.nio.file.Files;
@@ -36,6 +35,7 @@ public class EntryService {
     private final EntryRepo entryRepo;
     private final PersonRepo personRepo;
     private final GroupRepo groupRepo;
+    private final SupabaseStorageService supabaseStorageService;
 
 
     public Page<Entry> getAllEntries(int page, int size) {
@@ -92,19 +92,13 @@ public class EntryService {
     }
 
     public String uploadReceipt(String id, MultipartFile file){
-        log.info("Saving receipt for entry ID: {}", id);
+        log.info("Uploading receipt for entry ID: {}", id);
         Entry entry = getEntry(id);
-        try {
-            entry.setReceiptData(file.getBytes());
-            String photoUrl = ServletUriComponentsBuilder.fromCurrentContextPath()
-                    .path("/entry/image/" + id)
-                    .toUriString();
-            entry.setReceipt(photoUrl);
-            entryRepo.save(entry);
-            return photoUrl;
-        } catch (Exception ex) {
-            throw new RuntimeException("Unable to save receipt image to database: " + ex.getMessage());
-        }
+        String publicUrl = supabaseStorageService.upload(file);
+        entry.setReceipt(publicUrl);
+        entry.setReceiptData(null); // no longer storing bytes in DB
+        entryRepo.save(entry);
+        return publicUrl;
     }
 
     // --- Validation ---
