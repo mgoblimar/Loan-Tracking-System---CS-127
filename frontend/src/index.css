@@ -337,43 +337,218 @@ body {
 
 /* ── Expanded Loan Row ── */
 .loan-row-expanded {
-  background: #fafafa;
-  padding: 1rem 0.75rem 1rem 2.5rem;
-  border-bottom: 1px solid #f0f0f0;
+  background: #f8fafc;
+  padding: 1.25rem 1rem 1rem 1rem;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
+/* ── Section Cards (each part of the expanded detail) ── */
+.expanded-section-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+}
+
+.expanded-section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.65rem;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.expanded-section-icon {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.expanded-section-title {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.expanded-section-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #6366f1;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  border-radius: 999px;
+  padding: 1px 7px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* ── Reference ID Card ── */
+.expanded-ref-section {
+  border-left: 3px solid #6366f1;
+  background: linear-gradient(135deg, #fafafa, #f8f7ff);
+}
+
+.ref-id-badge {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #4338ca;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  border-radius: 6px;
+  padding: 4px 12px;
+  display: inline-block;
+  letter-spacing: 0.5px;
+}
+
+/* ── Notes Card ── */
+.expanded-notes-section {
+  border-left: 3px solid #f59e0b;
+  background: linear-gradient(135deg, #fafafa, #fffbf0);
+}
+
+.expanded-notes-text {
+  font-size: 0.86rem;
+  color: #475569;
+  line-height: 1.6;
+  margin: 0;
+  white-space: pre-line;
+}
+
+/* ── Splits Card ── */
+.expanded-splits-section {
+  border-left: 3px solid #10b981;
+  background: linear-gradient(135deg, #fafafa, #f0fdf4);
+}
+
+/* ── Payments Card ── */
+.expanded-payments-section {
+  border-left: 3px solid #0ea5e9;
+  background: linear-gradient(135deg, #fafafa, #f0f9ff);
+}
+
+.expanded-payments-section .payments-timeline-table {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+/* ── Receipt Card ── */
+.expanded-receipt-section {
+  border-left: 3px solid #8b5cf6;
+  background: linear-gradient(135deg, #fafafa, #faf5ff);
+}
+
+/* Receipt preview button (has image) */
+.receipt-preview-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  background: #fff;
+  border: 1px solid #ddd6fe;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  max-width: 320px;
+}
+
+.receipt-preview-btn:hover {
+  background: #f5f3ff;
+  border-color: #a78bfa;
+  box-shadow: 0 3px 10px rgba(139,92,246,0.12);
+  transform: translateY(-1px);
+}
+
+.receipt-preview-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.receipt-preview-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.receipt-preview-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.receipt-preview-sub {
+  font-size: 0.7rem;
+  color: #8b5cf6;
+  font-weight: 500;
+  margin-top: 1px;
+}
+
+.receipt-preview-arrow {
+  font-size: 1rem;
+  color: #8b5cf6;
+  font-weight: 700;
+}
+
+/* Receipt upload label (no image) */
+.receipt-upload-label {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.65rem 0.85rem;
+  background: #faf5ff;
+  border: 1.5px dashed #c4b5fd;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  max-width: 320px;
+  color: #7c3aed;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.receipt-upload-label:hover {
+  background: #f3e8ff;
+  border-color: #8b5cf6;
+}
+
+.receipt-upload-icon {
+  font-size: 1.2rem;
+}
+
+.receipt-upload-text {
+  color: #7c3aed;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+/* ── Expanded Actions strip ── */
+.expanded-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  align-items: center;
+  padding-top: 0.5rem;
+  border-top: 1px solid #f1f5f9;
+  margin-top: 0.25rem;
+}
+
+/* Old helpers kept for safety */
 .expanded-notes {
   font-size: 0.85rem;
   color: #555;
   margin-bottom: 0.75rem;
 }
 
-.payment-history-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.8rem;
-  margin-bottom: 0.75rem;
-}
 
-.payment-history-table th {
-  text-align: left;
-  padding: 0.35rem 0.75rem;
-  background: #f0f0f0;
-  color: #555;
-  font-weight: 600;
-}
-
-.payment-history-table td {
-  padding: 0.35rem 0.75rem;
-  border-bottom: 1px solid #eee;
-  color: #333;
-}
-
-.expanded-actions {
-  display: flex;
-  gap: 0.5rem;
-  justify-content: flex-end;
-}
 
 /* ── Modals ── */
 .modal-overlay {
@@ -975,13 +1150,44 @@ body {
 .payment-method-badge {
   background: #e9ecef;
   color: #495057;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.72rem;
   font-weight: 600;
   display: inline-block;
   text-align: center;
   width: fit-content;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.payment-method-badge.gcash {
+  background: rgba(0, 123, 255, 0.1);
+  color: #007bff;
+  border-color: rgba(0, 123, 255, 0.2);
+}
+
+.payment-method-badge.maya {
+  background: rgba(40, 167, 69, 0.1);
+  color: #28a745;
+  border-color: rgba(40, 167, 69, 0.2);
+}
+
+.payment-method-badge.cash {
+  background: rgba(245, 158, 11, 0.1);
+  color: #d97706;
+  border-color: rgba(245, 158, 11, 0.2);
+}
+
+.payment-method-badge.credit-card {
+  background: rgba(111, 66, 193, 0.1);
+  color: #6f42c1;
+  border-color: rgba(111, 66, 193, 0.2);
+}
+
+.payment-method-badge.bank-transfer {
+  background: rgba(23, 162, 184, 0.1);
+  color: #17a2b8;
+  border-color: rgba(23, 162, 184, 0.2);
 }
 
 .btn-view-receipt-inline {
@@ -1286,6 +1492,86 @@ body {
   color: #fff;
 }
 
+/* ── Direction Filter Chips ── */
+.direction-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.owe-chip:hover {
+  border-color: #fca5a5;
+  color: #dc2626;
+  background: #fff5f5;
+}
+
+.owe-chip.active {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: #fff;
+}
+
+.owed-chip:hover {
+  border-color: #86efac;
+  color: #16a34a;
+  background: #f0fdf4;
+}
+
+.owed-chip.active {
+  background: #16a34a;
+  border-color: #16a34a;
+  color: #fff;
+}
+
+/* ── Transaction Type Filter Chips ── */
+.straight-chip:hover {
+  border-color: #bae6fd;
+  color: #0369a1;
+  background: #f0f9ff;
+}
+
+.straight-chip.active {
+  background: #0284c7;
+  border-color: #0284c7;
+  color: #fff;
+}
+
+.installment-chip:hover {
+  border-color: #fde68a;
+  color: #b45309;
+  background: #fffbeb;
+}
+
+.installment-chip.active {
+  background: #d97706;
+  border-color: #d97706;
+  color: #fff;
+}
+
+.group-chip:hover {
+  border-color: #e9d5ff;
+  color: #7c3aed;
+  background: #faf5ff;
+}
+
+.group-chip.active {
+  background: #8b5cf6;
+  border-color: #8b5cf6;
+  color: #fff;
+}
+
+/* ── Vertical divider between chip groups ── */
+.filter-chip-divider {
+  display: inline-block;
+  width: 1px;
+  height: 18px;
+  background: #e0e0e0;
+  border-radius: 1px;
+  flex-shrink: 0;
+  margin: 0 2px;
+}
+
+
 /* ── Active Filter Bar ── */
 .active-filter-bar {
   display: flex;
@@ -1428,7 +1714,7 @@ body {
 
 .prev-payments-row {
   display: grid;
-  grid-template-columns: 1.2fr 1.8fr 1.4fr 0.9fr 0.9fr 1.1fr 0.8fr;
+  grid-template-columns: 1.2fr 1.8fr 1.4fr 1fr 0.9fr 0.9fr 1.1fr 0.8fr;
   align-items: center;
   padding: 0.7rem 1rem;
   font-size: 0.82rem;
@@ -1691,4 +1977,384 @@ body {
   text-align: center;
 }
 
+/* ── Premium Date Badges ── */
+.loan-dates-badges {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
 
+.date-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 6px;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  font-family: 'Inter', sans-serif;
+  letter-spacing: 0.2px;
+}
+
+.date-badge.start {
+  background: rgba(241, 245, 249, 0.75);
+  color: #475569;
+  border-color: #cbd5e1;
+}
+
+.date-badge.due {
+  background: rgba(254, 242, 242, 0.8);
+  color: #dc2626;
+  border-color: rgba(254, 202, 202, 0.9);
+}
+
+/* ── Premium Two-Column Edit Loan Modal Layout ── */
+.edit-loan-modal-container {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 24px;
+  margin-top: 14px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .edit-loan-modal-container {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+.edit-modal-helper-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 14px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}
+
+.edit-modal-helper-card h5 {
+  margin: 0 0 10px 0;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.edit-modal-helper-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.76rem;
+  color: #475569;
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+.edit-modal-helper-item:last-child {
+  margin-bottom: 0;
+}
+
+.edit-modal-helper-bullet {
+  color: #0284c7;
+  font-weight: bold;
+}
+
+/* ── Payment Status Badges on Loan Cards ── */
+.payment-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  margin-top: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  width: fit-content;
+}
+
+.payment-status-badge.ps-unpaid {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.payment-status-badge.ps-partially-paid {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.payment-status-badge.ps-paid {
+  background: rgba(34, 197, 94, 0.1);
+  color: #22c55e;
+  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+/* ── Installment Term Schedule Grid ── */
+.term-schedule-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.term-card {
+  background: #fff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.term-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.term-card.term-paid {
+  border-color: #bbf7d0;
+  background: linear-gradient(135deg, #fff, #f0fdf4);
+}
+
+.term-card.term-unpaid {
+  border-color: #fecaca;
+  background: linear-gradient(135deg, #fff, #fef2f2);
+}
+
+.term-card.term-delinquent {
+  border-color: #fca5a5;
+  background: linear-gradient(135deg, #fff, #fff5f5);
+  animation: pulse-border 2s infinite ease-in-out;
+}
+
+@keyframes pulse-border {
+  0% { border-color: #fca5a5; }
+  50% { border-color: #ef4444; }
+  100% { border-color: #fca5a5; }
+}
+
+.term-card.term-skipped {
+  border-color: #e2e8f0;
+  background: linear-gradient(135deg, #fff, #f8fafc);
+  opacity: 0.85;
+}
+
+.term-card.term-not-started {
+  border-color: #cbd5e1;
+  background: linear-gradient(135deg, #fff, #fafafa);
+  opacity: 0.75;
+}
+
+.term-number {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #475569;
+}
+
+.term-due-date {
+  font-size: 0.7rem;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.term-amount {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.term-status-badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.term-status-badge.ts-paid {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.term-status-badge.ts-unpaid {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.term-status-badge.ts-delinquent {
+  background: #ffe4e6;
+  color: #9f1239;
+}
+
+.term-status-badge.ts-skipped {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.term-status-badge.ts-not-started {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+/* ── Group Split Member Cards ── */
+.splits-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.split-member-card {
+  background: #fff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.2s ease;
+}
+
+.split-member-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.03);
+}
+
+.split-member-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.split-member-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.split-member-status-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.split-member-value {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #0f172a;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.split-member-paid-progress {
+  font-size: 0.68rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* ── Payment Allocation Status Badges ── */
+.payment-allocation-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 9999px;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+}
+
+.payment-allocation-status-badge.pas-unpaid {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.15);
+}
+
+.payment-allocation-status-badge.pas-partially-paid {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.15);
+}
+
+.payment-allocation-status-badge.pas-paid {
+  background: rgba(34, 197, 94, 0.1);
+  color: #22c55e;
+  border: 1px solid rgba(34, 197, 94, 0.15);
+}
+
+/* ── Term Pagination Styles ── */
+.term-pagination {
+  margin-left: auto; /* Push to the right side of the flexbox header */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(241, 245, 249, 0.6);
+  backdrop-filter: blur(8px);
+  padding: 4px 8px;
+  border-radius: 20px;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.term-pagination-btn {
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  font-size: 0.65rem;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.term-pagination-btn:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #94a3b8;
+  color: #0f172a;
+  transform: scale(1.05);
+}
+
+.term-pagination-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.term-pagination-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.term-pagination-info {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #475569;
+  min-width: 75px;
+  text-align: center;
+  user-select: none;
+}

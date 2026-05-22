@@ -31,7 +31,7 @@ public class InstallmentStatusCalculator {
             int totalTerms
             ) {
 
-        LocalDate today = LocalDate.now();
+        LocalDate today = SystemTimeProvider.now();
         LocalDate termDueDate = getDueDate(startDate, frequency, termNumber);
 
         // Not Started Yet
@@ -66,7 +66,7 @@ public class InstallmentStatusCalculator {
     }
 
     public static int elapsedTerms(LocalDate startDate, PaymentFrequency frequency) {
-        LocalDate today = LocalDate.now();
+        LocalDate today = SystemTimeProvider.now();
         if(today.isBefore(startDate)){
             return 0;
         }

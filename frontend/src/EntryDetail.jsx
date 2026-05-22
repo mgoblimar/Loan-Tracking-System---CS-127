@@ -33,6 +33,7 @@ function AddPaymentForm({ entry, groupMembers, onSave, onClose }) {
     paymentDate: new Date().toISOString().split('T')[0],
     paymentAmount: '',
     payeeId: defaultPayeeId,
+    paymentMethod: 'Cash',
     proof: '',
     notes: '',
   });
@@ -52,6 +53,7 @@ function AddPaymentForm({ entry, groupMembers, onSave, onClose }) {
       paymentDate: form.paymentDate,
       paymentAmount: parseFloat(form.paymentAmount),
       payee: { id: form.payeeId },
+      paymentMethod: form.paymentMethod,
       proof: form.proof || null,
       notes: form.notes || null,
     };
@@ -118,6 +120,19 @@ function AddPaymentForm({ entry, groupMembers, onSave, onClose }) {
           ))}
         </select>
       )}
+
+      <label>Payment Method *</label>
+      <select
+        className="form-input"
+        value={form.paymentMethod}
+        onChange={e => set('paymentMethod', e.target.value)}
+      >
+        <option value="Cash">Cash</option>
+        <option value="GCash">GCash</option>
+        <option value="Maya">Maya</option>
+        <option value="Credit Card">Credit Card</option>
+        <option value="Bank Transfer">Bank Transfer</option>
+      </select>
 
       <label>Proof (optional)</label>
       <input
@@ -281,6 +296,7 @@ export default function EntryDetail({ entry: initialEntry, onClose, onEntryUpdat
                 <tr>
                   <th>Date</th>
                   <th>Payee</th>
+                  <th>Method</th>
                   <th>Amount</th>
                   <th>Proof</th>
                   <th>Notes</th>
@@ -288,13 +304,20 @@ export default function EntryDetail({ entry: initialEntry, onClose, onEntryUpdat
                 </tr>
               </thead>
               <tbody>
-                {payments.map(p => (
-                  <tr key={p.id}>
-                    <td>{p.paymentDate}</td>
-                    <td>{p.payee?.name ?? '—'}</td>
-                    <td style={{ color: '#34d399', fontWeight: 600 }}>{fmt(p.paymentAmount)}</td>
-                    <td>{p.proof ? <span title={p.proof} style={{ fontSize: '0.8rem' }}>📎 {p.proof.length > 20 ? p.proof.slice(0, 20) + '…' : p.proof}</span> : '—'}</td>
-                    <td style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{p.notes ?? '—'}</td>
+                {payments.map(p => {
+                  const mMethod = p.paymentMethod || (p.notes && p.notes.startsWith('Paid via ') ? p.notes.replace('Paid via ', '') : (p.proof ? 'Credit Card' : 'Cash'));
+                  return (
+                    <tr key={p.id}>
+                      <td>{p.paymentDate}</td>
+                      <td>{p.payee?.name ?? '—'}</td>
+                      <td>
+                        <span className={`payment-method-badge ${mMethod.toLowerCase().replace(/\s+/g, '-')}`}>
+                          {mMethod}
+                        </span>
+                      </td>
+                      <td style={{ color: '#34d399', fontWeight: 600 }}>{fmt(p.paymentAmount)}</td>
+                      <td>{p.proof ? <span title={p.proof} style={{ fontSize: '0.8rem' }}>📎 {p.proof.length > 20 ? p.proof.slice(0, 20) + '…' : p.proof}</span> : '—'}</td>
+                      <td style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{p.notes ?? '—'}</td>
                     <td>
                       <button className="btn-danger" style={{ padding: '2px 8px', fontSize: '0.75rem' }}
                         onClick={() => handleDeletePayment(p.id)}>
@@ -302,7 +325,8 @@ export default function EntryDetail({ entry: initialEntry, onClose, onEntryUpdat
                       </button>
                     </td>
                   </tr>
-                ))}
+                );
+              })}
               </tbody>
             </table>
           )}

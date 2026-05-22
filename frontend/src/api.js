@@ -55,7 +55,7 @@ export const installmentApi = {
   getDetail: (entryId) => api.get(`/entry/${entryId}/installment`).then(r => r.data),
   createDetail: (entryId, detail) => api.post(`/entry/${entryId}/installment`, detail).then(r => r.data),
   updateDetail: (entryId, detail) => api.put(`/entry/${entryId}/installment`, detail).then(r => r.data),
-  skipTerm: (entryId) => api.post(`/entry/${entryId}/installment/skip`).then(r => r.data),
+  skipTerm: (entryId, option = 'extend') => api.post(`/entry/${entryId}/installment/skip?option=${option}`).then(r => r.data),
   getStatuses: (entryId) => api.get(`/entry/${entryId}/installment/statuses`).then(r => r.data),
 };
 
@@ -68,4 +68,11 @@ export const allocationApi = {
   divideEqually: (entryId) => api.post(`/entry/${entryId}/allocation/divide-equally`).then(r => r.data),
   divideByPercent: (entryId, percentMap) => api.post(`/entry/${entryId}/allocation/divide-by-percent`, percentMap).then(r => r.data),
   divideByAmount: (entryId, amountMap) => api.post(`/entry/${entryId}/allocation/divide-by-amount`, amountMap).then(r => r.data),
+};
+
+// ─── System Date Simulator ─────────────────────────────────────────────────────
+export const systemApi = {
+  getSimulatedDate: () => api.get('/system/date').then(r => r.data),
+  setSimulatedDate: (date) => api.post(`/system/date?date=${date}`).then(r => r.data),
+  clearSimulatedDate: () => api.delete('/system/date').then(r => r.data),
 };

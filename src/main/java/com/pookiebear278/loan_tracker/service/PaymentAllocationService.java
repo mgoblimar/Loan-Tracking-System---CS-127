@@ -37,6 +37,9 @@ public class PaymentAllocationService {
     }
 
     public PaymentAllocation createAllocation(String entryId, PaymentAllocation allocation) {
+        if (allocation.getAmount() == null || allocation.getAmount().compareTo(BigDecimal.ZERO) < 0) {
+            throw new InvalidEntryConfigurationException("Allocation amount cannot be negative");
+        }
 
         Entry entry = entryService.getEntry(entryId);
         validateGroupExpense(entry);
@@ -52,6 +55,10 @@ public class PaymentAllocationService {
 
 
     public PaymentAllocation updateAllocation(String id, PaymentAllocation updated){
+        if (updated.getAmount() == null || updated.getAmount().compareTo(BigDecimal.ZERO) < 0) {
+            throw new InvalidEntryConfigurationException("Allocation amount cannot be negative");
+        }
+
         PaymentAllocation existing = paymentAllocationRepo.findById(id)
                 .orElseThrow(() -> new NotFoundException("Payment Allocation Not Found " + id));
         existing.setDescription(updated.getDescription());
@@ -102,6 +109,12 @@ public class PaymentAllocationService {
     }
 
     public List<PaymentAllocation> divideByPercent(String entryId, Map<String, BigDecimal> personIdToPercent) {
+        for (BigDecimal percent : personIdToPercent.values()) {
+            if (percent == null || percent.compareTo(BigDecimal.ZERO) < 0) {
+                throw new InvalidEntryConfigurationException("Percentage cannot be negative");
+            }
+        }
+
         Entry entry = entryService.getEntry(entryId);
         validateGroupExpense(entry);
 
@@ -127,6 +140,12 @@ public class PaymentAllocationService {
     // personIdToAmoun: Map of personid -> exact amount they owe
 
     public List<PaymentAllocation> divideByAmount(String entryId, Map<String, BigDecimal> personIdToAmount) {
+        for (BigDecimal amount : personIdToAmount.values()) {
+            if (amount == null || amount.compareTo(BigDecimal.ZERO) < 0) {
+                throw new InvalidEntryConfigurationException("Amount cannot be negative");
+            }
+        }
+
         Entry entry = entryService.getEntry(entryId);
         validateGroupExpense(entry);
 

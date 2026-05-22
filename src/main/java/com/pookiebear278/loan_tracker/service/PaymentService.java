@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import com.pookiebear278.loan_tracker.domain.enums.TransactionType;
 import com.pookiebear278.loan_tracker.domain.InstallmentDetail;
+import com.pookiebear278.loan_tracker.util.SystemTimeProvider;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -71,7 +72,7 @@ public class PaymentService {
         // Auto-update entry status
         if(newRemaining.compareTo(BigDecimal.ZERO) == 0){
             entry.setStatus(PaymentStatus.PAID);
-            entry.setDateFullyPaid(LocalDate.now());
+            entry.setDateFullyPaid(SystemTimeProvider.now());
         } else {
             entry.setStatus(PaymentStatus.PARTIALLY_PAID);
         }
@@ -132,8 +133,20 @@ public class PaymentService {
             return;
         }
 
-        // Calculate fully paid terms: k = totalPaid / perTerm
-        int k = totalPaid.divide(perTerm, 0, RoundingMode.DOWN).intValue();
+        // Calculate remaining unpaid balance
+        BigDecimal currentRemaining = entry.getAmountBorrowed().subtract(totalPaid);
+        if (currentRemaining.compareTo(BigDecimal.ZERO) < 0) {
+            currentRemaining = BigDecimal.ZERO;
+        }
+
+        // Calculate unpaid terms using CEILING division
+        int unpaidTerms = currentRemaining.divide(perTerm, 0, RoundingMode.CEILING).intValue();
+
+        // Calculate paid terms: k = totalTerms - skippedTerms - unpaidTerms
+        int k = detail.getPaymentTerms() - detail.getSkippedTerms() - unpaidTerms;
+        if (k < 0) {
+            k = 0;
+        }
 
         // Account for skipped terms in next due date calculation
         int totalShift = k + detail.getSkippedTerms();

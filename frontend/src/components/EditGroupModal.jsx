@@ -18,7 +18,8 @@ export default function EditGroupModal({ group, contacts, onClose, onSave, onDel
   };
 
   const handleSave = () => {
-    if (!name.trim()) return;
+    if (!name.trim()) { alert('Group name is required.'); return; }
+    if (memberIds.length < 2) { alert('A group must have at least 2 members.'); return; }
     onSave({ ...group, name: name.trim(), memberIds });
   };
 
@@ -78,13 +79,32 @@ export default function EditGroupModal({ group, contacts, onClose, onSave, onDel
             {memberIds.length === 0 && (
               <div style={{ color: '#aaa', padding: '0.75rem 0', textAlign: 'center' }}>No members in this group yet.</div>
             )}
+
+            {memberIds.length === 1 && (
+              <div style={{
+                marginTop: '0.65rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                background: '#fffbeb',
+                border: '1px solid #fde68a',
+                borderRadius: '8px',
+                padding: '0.55rem 0.85rem',
+                fontSize: '0.78rem',
+                color: '#92400e',
+                fontWeight: 600,
+              }}>
+                <span>⚠️</span>
+                <span>A group requires at least <strong>2 members</strong>. Add one more to save.</span>
+              </div>
+            )}
           </div>
 
           <div className="modal-footer-split" style={{ marginTop: '1.5rem' }}>
             <button className="btn btn-red" onClick={handleDelete}>Delete Group</button>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
               <button className="btn btn-light" onClick={onClose}>Cancel</button>
-              <button className="btn btn-dark" onClick={handleSave}>Save Group</button>
+              <button className="btn btn-dark" onClick={handleSave} disabled={!name.trim() || memberIds.length < 2}>Save Group</button>
             </div>
           </div>
         </div>

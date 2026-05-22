@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import PayNowModal from './PayNowModal';
 import { paymentApi } from '../api';
 
-export default function Payments({ loans, setLoans, contacts, groups = [], activePersonId, refreshAllData }) {
+export default function Payments({ loans, setLoans, contacts, groups = [], activePersonId, refreshAllData, simulatedDate }) {
   const [showPayNow, setShowPayNow] = useState(null);
   const [removingPaymentId, setRemovingPaymentId] = useState(null);
+  const [showArchivedPayments, setShowArchivedPayments] = useState(false);
 
   const getContact = (id) => contacts.find((c) => c.id === id);
 
@@ -53,11 +54,11 @@ export default function Payments({ loans, setLoans, contacts, groups = [], activ
 
   const youPaid = loans.filter((l) => {
     const bal = getLoanBalance(l, activePersonId);
-    return l.direction === 'owe' && bal.remaining > 0;
+    return l.direction === 'owe' && bal.remaining > 0 && !l.archived;
   });
   const paidYou = loans.filter((l) => {
     const bal = getLoanBalance(l, activePersonId);
-    return l.direction === 'owed' && bal.remaining > 0;
+    return l.direction === 'owed' && bal.remaining > 0 && !l.archived;
   });
 
   const totalDueFromYou = youPaid.reduce((s, l) => s + getLoanBalance(l, activePersonId).remaining, 0);
@@ -65,8 +66,10 @@ export default function Payments({ loans, setLoans, contacts, groups = [], activ
 
   const fmt = (n) => `₱ ${n.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
+  // Filter loans for previous payments history: if showArchivedPayments is false, hide payments from archived loans
+  const loansForPayments = showArchivedPayments ? loans : loans.filter(l => !l.archived);
   // Flatten ALL payments from ALL loans, newest first
-  const allPayments = loans
+  const allPayments = loansForPayments
     .flatMap((loan) => {
       const contactName = loan.type === 'Group'
         ? (groups.find((g) => String(g.id) === String(loan.groupId))?.name || 'Unknown Group')
@@ -77,6 +80,7 @@ export default function Payments({ loans, setLoans, contacts, groups = [], activ
         loanId: loan.id,
         loanDirection: loan.direction,
         loanType: loan.type,
+        loanFrequency: loan.frequency,
         contactName,
         referenceId: loan.referenceId,
         rawDate: p.date, // already formatted string, use for display
@@ -89,12 +93,14 @@ export default function Payments({ loans, setLoans, contacts, groups = [], activ
 
   const handlePayNow = async (amount, method, loan, memberPayments) => {
     try {
+      const activePaymentDate = simulatedDate || new Date().toISOString().split('T')[0];
       if (memberPayments && memberPayments.length > 0) {
         for (const mp of memberPayments) {
           await paymentApi.record(loan.id, {
             paymentAmount: mp.amount,
             payee: { id: mp.memberId },
-            paymentDate: new Date().toISOString().split('T')[0],
+            paymentDate: activePaymentDate,
+            paymentMethod: method,
             notes: `Paid via ${method}`
           });
         }
@@ -103,7 +109,8 @@ export default function Payments({ loans, setLoans, contacts, groups = [], activ
         await paymentApi.record(loan.id, {
           paymentAmount: amount,
           payee: { id: payeeId },
-          paymentDate: new Date().toISOString().split('T')[0],
+          paymentDate: activePaymentDate,
+          paymentMethod: method,
           notes: `Paid via ${method}`
         });
       }
@@ -171,7 +178,7 @@ export default function Payments({ loans, setLoans, contacts, groups = [], activ
               <div key={loan.id} className="payment-list-item">
                 <div className="payment-list-info">
                   <h4>{displayName}</h4>
-                  <p>
+                  <p style={{ marginBottom: 0 }}>
                     <strong>{loan.name}</strong>
                     {loan.referenceId && (
                       <span style={{ 
@@ -187,8 +194,22 @@ export default function Payments({ loans, setLoans, contacts, groups = [], activ
                         {loan.referenceId}
                       </span>
                     )}
-                    {" "}| Start: {loan.startDate}{loan.dueDate ? ` | Due: ${loan.dueDate}` : ''}
                   </p>
+                  <div style={{ marginTop: '5.5px', marginBottom: '5.5px' }}>
+                    <span className={`pp-type-badge pp-type-${loan.type.toLowerCase()}`} style={{ fontSize: '0.62rem', fontWeight: 800, padding: '2px 8px', borderRadius: '999px', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
+                      {loan.type === 'Installment' ? `${loan.frequency} Installment` : loan.type}
+                    </span>
+                  </div>
+                  <div className="loan-dates-badges">
+                    <span className="date-badge start" title="Start Date">
+                      📅 {loan.startDate}
+                    </span>
+                    {loan.dueDate && (
+                      <span className="date-badge due" title="Due Date">
+                        ⌛ {loan.dueDate}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="payment-list-actions-side">
                   <div className="payment-list-amount amount-red">
@@ -220,7 +241,7 @@ export default function Payments({ loans, setLoans, contacts, groups = [], activ
               <div key={loan.id} className="payment-list-item">
                 <div className="payment-list-info">
                   <h4>{displayName}</h4>
-                  <p>
+                  <p style={{ marginBottom: 0 }}>
                     <strong>{loan.name}</strong>
                     {loan.referenceId && (
                       <span style={{ 
@@ -236,8 +257,22 @@ export default function Payments({ loans, setLoans, contacts, groups = [], activ
                         {loan.referenceId}
                       </span>
                     )}
-                    {" "}| Start: {loan.startDate}{loan.dueDate ? ` | Due: ${loan.dueDate}` : ''}
                   </p>
+                  <div style={{ marginTop: '5.5px', marginBottom: '5.5px' }}>
+                    <span className={`pp-type-badge pp-type-${loan.type.toLowerCase()}`} style={{ fontSize: '0.62rem', fontWeight: 800, padding: '2px 8px', borderRadius: '999px', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
+                      {loan.type === 'Installment' ? `${loan.frequency} Installment` : loan.type}
+                    </span>
+                  </div>
+                  <div className="loan-dates-badges">
+                    <span className="date-badge start" title="Start Date">
+                      📅 {loan.startDate}
+                    </span>
+                    {loan.dueDate && (
+                      <span className="date-badge due" title="Due Date">
+                        ⌛ {loan.dueDate}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="payment-list-actions-side">
                   <div className="payment-list-amount amount-green">
@@ -261,13 +296,40 @@ export default function Payments({ loans, setLoans, contacts, groups = [], activ
 
       {/* Previous Payments — full history, newest first */}
       <div className="prev-payments-card">
-        <div className="prev-payments-header">
+        <div className="prev-payments-header" style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: '1rem',
+          flexWrap: 'wrap'
+        }}>
           <div>
             <div className="prev-payments-title">Previous Payments</div>
             <div className="prev-payments-sub">
               {totalPaymentsCount} payment{totalPaymentsCount !== 1 ? 's' : ''} · Total: <strong>{fmt(totalPaidAmount)}</strong>
             </div>
           </div>
+          <button
+            className={`filter-chip archived-toggle ${showArchivedPayments ? 'active' : ''}`}
+            onClick={() => setShowArchivedPayments(!showArchivedPayments)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              border: showArchivedPayments ? '1.5px solid #38bdf8' : '1.5px solid #e0e0e0',
+              background: showArchivedPayments ? 'rgba(56, 189, 248, 0.1)' : '#fff',
+              color: showArchivedPayments ? '#38bdf8' : '#555',
+              padding: '0.3rem 0.85rem',
+              borderRadius: '999px',
+              fontWeight: 600,
+              fontSize: '0.75rem',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease',
+              fontFamily: "'Inter', sans-serif"
+            }}
+          >
+            📥 {showArchivedPayments ? 'Viewing Archived Payments' : 'Show Archived Payments'}
+          </button>
         </div>
 
         {allPayments.length > 0 ? (
@@ -277,6 +339,7 @@ export default function Payments({ loans, setLoans, contacts, groups = [], activ
               <span>Date</span>
               <span>Loan</span>
               <span>Contact</span>
+              <span>Method</span>
               <span>Type</span>
               <span>Direction</span>
               <span>Amount</span>
@@ -305,7 +368,14 @@ export default function Payments({ loans, setLoans, contacts, groups = [], activ
                 </span>
                 <span className="pp-contact">{p.contactName}</span>
                 <span>
-                  <span className={`pp-type-badge pp-type-${p.loanType.toLowerCase()}`}>{p.loanType}</span>
+                  <span className={`payment-method-badge ${p.type.toLowerCase().replace(/\s+/g, '-')}`}>
+                    {p.type}
+                  </span>
+                </span>
+                <span>
+                  <span className={`pp-type-badge pp-type-${p.loanType.toLowerCase()}`}>
+                    {p.loanType === 'Installment' ? `${p.loanFrequency || 'Monthly'} Installment` : p.loanType}
+                  </span>
                 </span>
                 <span>{directionBadge(p.loanDirection)}</span>
                 <span className={`pp-amount ${p.loanDirection === 'owe' ? 'amount-red' : 'amount-green'}`}>

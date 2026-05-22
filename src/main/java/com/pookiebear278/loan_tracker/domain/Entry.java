@@ -69,8 +69,15 @@ public class Entry {
 
     private String receipt;
 
+    @Column(name = "receipt_data", columnDefinition = "bytea")
+    @JsonIgnore
+    private byte[] receiptData;
+
     @Column(updatable = false)
     private String referenceId;
+
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private Boolean archived = false;
 
 
 
@@ -121,6 +128,10 @@ public class Entry {
 
         if (this.status == null) {
             this.status = PaymentStatus.UNPAID;
+        }
+
+        if (this.archived == null) {
+            this.archived = false;
         }
 
         if (this.amountRemaining == null && this.amountBorrowed != null){

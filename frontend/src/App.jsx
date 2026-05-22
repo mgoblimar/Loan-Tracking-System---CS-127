@@ -4,7 +4,8 @@ import Overview from './components/Overview';
 import Payments from './components/Payments';
 import PeopleGroups from './components/PeopleGroups';
 import Options from './components/Options';
-import { personApi, groupApi, entryApi, paymentApi, installmentApi, allocationApi } from './api';
+import disciLogo from './assets/Disci.png';
+import { personApi, groupApi, entryApi, paymentApi, installmentApi, allocationApi, systemApi } from './api';
 
 const serializeNotes = (notes, dueDate) => {
   if (!dueDate) return notes || '';
@@ -29,6 +30,7 @@ export default function App() {
   const [activePersonId, setActivePersonId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [alertConfig, setAlertConfig] = useState(null); // { message: string, type: 'info' | 'error' | 'success' }
+  const [simulatedDate, setSimulatedDate] = useState(null);
 
   const hydrateLoans = async (entries, activeId, contactsList) => {
     return await Promise.all(
@@ -39,8 +41,9 @@ export default function App() {
           id: p.id,
           date: new Date(p.paymentDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
           amount: parseFloat(p.paymentAmount),
-          type: p.proof ? 'credit card' : 'cash',
+          type: p.paymentMethod || (p.notes && p.notes.startsWith('Paid via ') ? p.notes.replace('Paid via ', '') : (p.proof ? 'Credit Card' : 'Cash')),
           receipt: p.proof || null,
+          payeeId: p.payee?.id || null,
         }));
 
         // Fetch installment details if applicable
@@ -50,6 +53,8 @@ export default function App() {
         let installmentNotes = '';
         let termAmount = 0;
         let nextTermAmount = 0;
+        let termStatuses = []; // per-term status array for Installment loans
+        let skippedTerms = 0;
         if (entry.transactionType === 'INSTALLMENT_EXPENSE') {
           const inst = await installmentApi.getDetail(entry.id).catch(() => null);
           if (inst) {
@@ -57,17 +62,21 @@ export default function App() {
             totalTerms = inst.paymentTerms || 1;
             installmentNotes = inst.notes || '';
             termAmount = parseFloat(inst.paymentAmountPerTerm);
+            skippedTerms = inst.skippedTerms || 0;
             
-            const totalPaid = formattedPayments.reduce((sum, p) => sum + p.amount, 0);
-            const k = Math.floor(totalPaid / termAmount);
-            termsPaid = k;
+            const amountRemaining = parseFloat(entry.amountRemaining);
+            const unpaidTerms = Math.ceil(amountRemaining / termAmount);
+            termsPaid = Math.max(0, totalTerms - skippedTerms - unpaidTerms);
             
-            if (k < totalTerms) {
-              const allocatedToNext = totalPaid - (k * termAmount);
+            if (termsPaid < totalTerms) {
+              const allocatedToNext = (unpaidTerms * termAmount) - amountRemaining;
               nextTermAmount = termAmount - allocatedToNext;
             } else {
               nextTermAmount = 0;
             }
+
+            // Fetch per-term status list
+            termStatuses = await installmentApi.getStatuses(entry.id).catch(() => []);
           }
         }
 
@@ -115,10 +124,14 @@ export default function App() {
           frequency,
           totalTerms,
           termsPaid,
+          skippedTerms,
           termAmount,
           nextTermAmount,
+          termStatuses,
+          paymentStatus: entry.status || 'UNPAID',
           splits,
           splitMethod,
+          archived: entry.archived || false,
         };
       })
     );
@@ -128,6 +141,10 @@ export default function App() {
     try {
       let pList = await personApi.getAll();
       let gList = await groupApi.getAll();
+
+      // Fetch simulated calendar date
+      const simDate = await systemApi.getSimulatedDate().catch(() => null);
+      setSimulatedDate(simDate);
 
       const mappedContacts = pList.map((p) => ({
         id: p.id,
@@ -244,7 +261,10 @@ export default function App() {
   return (
     <div className="app-layout">
       <aside className="sidebar">
-        <div className="sidebar-logo">TrackIt</div>
+        <div className="sidebar-logo" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <img src={disciLogo} alt="Disci Logo" style={{ width: '36px', height: '36px', borderRadius: '8px', objectFit: 'contain' }} />
+          <span>Disci</span>
+        </div>
         
         {/* Active Profile Selection Box */}
         <div className="active-profile-box" style={{ 
@@ -328,6 +348,96 @@ export default function App() {
           )}
         </div>
 
+        {/* System Calendar Simulator */}
+        <div className="calendar-simulator-box" style={{ 
+          padding: '1.2rem', 
+          background: '#f8fafc',
+          border: '1px solid #e2e8f0', 
+          borderRadius: '12px',
+          marginBottom: '1.5rem',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+        }}>
+          <label style={{ 
+            fontSize: '0.75rem', 
+            textTransform: 'uppercase', 
+            letterSpacing: '0.05em', 
+            color: '#475569', 
+            display: 'block', 
+            marginBottom: '0.6rem',
+            fontWeight: 800
+          }}>
+            📅 Calendar Simulator
+          </label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <input 
+              type="date" 
+              value={simulatedDate || ''}
+              onChange={async (e) => {
+                const newDate = e.target.value;
+                setSimulatedDate(newDate);
+                if (newDate) {
+                  setLoading(true);
+                  try {
+                    await systemApi.setSimulatedDate(newDate);
+                    await refreshAllData();
+                  } catch (err) {
+                    console.error('Failed to set simulated date:', err);
+                  } finally {
+                    setLoading(false);
+                  }
+                }
+              }}
+              style={{
+                padding: '0.45rem 0.6rem',
+                borderRadius: '8px',
+                border: '1px solid #cbd5e1',
+                fontSize: '0.85rem',
+                color: '#0f172a',
+                outline: 'none',
+                cursor: 'pointer',
+                background: '#ffffff',
+                fontWeight: 600,
+                width: '100%',
+                boxSizing: 'border-box'
+              }}
+            />
+            {simulatedDate && (
+              <button
+                onClick={async () => {
+                  setLoading(true);
+                  try {
+                    await systemApi.clearSimulatedDate();
+                    setSimulatedDate(null);
+                    await refreshAllData();
+                  } catch (err) {
+                    console.error('Failed to clear simulated date:', err);
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+                style={{
+                  background: '#ef4444',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '0.5rem 0.75rem',
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  transition: 'background 0.15s ease',
+                  width: '100%',
+                  textAlign: 'center',
+                  boxShadow: '0 2px 4px rgba(239, 68, 68, 0.2)'
+                }}
+                onMouseOver={(e) => e.target.style.background = '#dc2626'}
+                onMouseOut={(e) => e.target.style.background = '#ef4444'}
+              >
+                Reset to Today
+              </button>
+            )}
+          </div>
+        </div>
+
         {navItems.map((item) => (
           <div
             key={item.label}
@@ -364,7 +474,7 @@ export default function App() {
               color: '#0f172a',
               marginBottom: '0.75rem'
             }}>
-              Welcome to TrackIt!
+              Welcome to Disci!
             </h1>
             <p style={{
               color: '#475569',
@@ -440,6 +550,7 @@ export default function App() {
                 groups={groups}
                 activePersonId={activePersonId}
                 refreshAllData={refreshAllData}
+                simulatedDate={simulatedDate}
               />
             )}
             {activeTab === 'Payments' && (
@@ -450,6 +561,7 @@ export default function App() {
                 groups={groups}
                 activePersonId={activePersonId}
                 refreshAllData={refreshAllData}
+                simulatedDate={simulatedDate}
               />
             )}
             {activeTab === 'People & Groups' && (

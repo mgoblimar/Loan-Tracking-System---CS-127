@@ -151,6 +151,12 @@ export default function AddLoanModal({ onClose, onAdd, contacts, groups, activeP
   const handleSubmit = () => {
     if (!form.name || !form.amount) return;
 
+    const amt = parseFloat(form.amount);
+    if (isNaN(amt) || amt < 0) {
+      alert('Amount borrowed cannot be negative');
+      return;
+    }
+
     // Start Date is required for all loans
     if (!form.startDate) {
       alert('Please select a Start Date');
@@ -206,6 +212,11 @@ export default function AddLoanModal({ onClose, onAdd, contacts, groups, activeP
     }
 
     if (form.type === 'Group' && groupMembers.length > 0) {
+      const hasNegativeSplit = Object.values(form.splits).some(v => parseFloat(v) < 0);
+      if (hasNegativeSplit) {
+        alert('Group splits cannot be negative');
+        return;
+      }
       if (!splitTotals.isValid) {
         alert(
           form.splitMethod === 'Divide Percent'
@@ -247,7 +258,7 @@ export default function AddLoanModal({ onClose, onAdd, contacts, groups, activeP
         </div>
         
         <div className="form-group">
-          <input className="form-input" placeholder="Amount (₱)" type="number" value={form.amount} onChange={(e) => set('amount', e.target.value)} />
+          <input className="form-input" placeholder="Amount (₱)" type="number" min="0" value={form.amount} onChange={(e) => set('amount', e.target.value)} />
         </div>
 
         {/* Type + Direction row */}
@@ -399,7 +410,7 @@ export default function AddLoanModal({ onClose, onAdd, contacts, groups, activeP
               </div>
               <div>
                 <label className="form-label-sub">Total Terms</label>
-                <input className="form-input" type="number" placeholder="e.g. 10" value={form.totalTerms} onChange={(e) => set('totalTerms', e.target.value)} />
+                <input className="form-input" type="number" min="1" placeholder="e.g. 10" value={form.totalTerms} onChange={(e) => set('totalTerms', e.target.value)} />
               </div>
             </div>
 
@@ -471,6 +482,7 @@ export default function AddLoanModal({ onClose, onAdd, contacts, groups, activeP
                       <input
                         className="form-input split-number-input"
                         type="number"
+                        min="0"
                         placeholder={form.splitMethod === 'Divide Percent' ? '0' : '0.00'}
                         value={form.splits[member.id] || ''}
                         onChange={(e) => handleSplitChange(member.id, e.target.value)}

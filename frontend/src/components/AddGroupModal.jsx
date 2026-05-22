@@ -19,7 +19,8 @@ export default function AddGroupModal({ contacts, onClose, onAdd }) {
   };
 
   const handleSubmit = () => {
-    if (!groupName.trim()) return;
+    if (!groupName.trim()) { alert('Group name is required.'); return; }
+    if (memberIds.length < 2) { alert('A group must have at least 2 members.'); return; }
     onAdd({ name: groupName.trim(), memberIds });
   };
 
@@ -122,11 +123,30 @@ export default function AddGroupModal({ contacts, onClose, onAdd }) {
                 No members added yet. Use the select button to choose members from your directory.
               </div>
             )}
+
+            {memberIds.length === 1 && (
+              <div style={{
+                marginTop: '0.65rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                background: '#fffbeb',
+                border: '1px solid #fde68a',
+                borderRadius: '8px',
+                padding: '0.55rem 0.85rem',
+                fontSize: '0.78rem',
+                color: '#92400e',
+                fontWeight: 600,
+              }}>
+                <span>⚠️</span>
+                <span>A group requires at least <strong>2 members</strong>. Add one more to continue.</span>
+              </div>
+            )}
           </div>
 
           <div className="modal-footer">
             <button className="btn btn-light" onClick={onClose}>Cancel</button>
-            <button className="btn btn-dark" onClick={handleSubmit} disabled={!groupName.trim()}>
+            <button className="btn btn-dark" onClick={handleSubmit} disabled={!groupName.trim() || memberIds.length < 2}>
               Add Group
             </button>
           </div>

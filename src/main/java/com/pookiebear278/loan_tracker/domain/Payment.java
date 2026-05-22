@@ -8,6 +8,7 @@ import org.hibernate.annotations.UuidGenerator;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import com.pookiebear278.loan_tracker.util.SystemTimeProvider;
 
 @Entity
 @Getter
@@ -28,7 +29,7 @@ public class Payment {
     private Entry entry;
 
     @Column(nullable = false )
-    private LocalDate paymentDate = LocalDate.now();
+    private LocalDate paymentDate = SystemTimeProvider.now();
 
     @Column(nullable = false, precision = 19, scale = 4)
     private BigDecimal paymentAmount;
@@ -41,11 +42,12 @@ public class Payment {
 
     private String proof;
     private String notes;
+    private String paymentMethod;
 
     @PrePersist
     public void setDefault(){
         if(this.paymentDate == null){
-            this.paymentDate = LocalDate.now();
+            this.paymentDate = SystemTimeProvider.now();
         }
     }
 

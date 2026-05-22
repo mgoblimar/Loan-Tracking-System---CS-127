@@ -102,6 +102,11 @@ export default function PayNowModal({ loan, onClose, onPay, contacts = [], activ
   // ── Submit ─────────────────────────────────────────────────────────────────
   const handlePay = () => {
     if (isGroup) {
+      const anyNegative = groupMembers.some((m) => !m.isMe && parseFloat(memberAmounts[m.id]) < 0);
+      if (anyNegative) {
+        setError('Payment amounts cannot be negative.');
+        return;
+      }
       if (groupTotal <= 0) {
         setError('Enter a payment amount for at least one member.');
         return;
@@ -136,10 +141,14 @@ export default function PayNowModal({ loan, onClose, onPay, contacts = [], activ
         onClick={(e) => e.stopPropagation()}
       >
         <div className="modal-title">Record Payment / Pay Now</div>
-
         {/* Loan summary */}
         <div className="paynow-info-box">
-          <div className="paynow-info-name">{loan.name}</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <div className="paynow-info-name" style={{ margin: 0 }}>{loan.name}</div>
+            <span className={`pp-type-badge pp-type-${loan.type.toLowerCase()}`} style={{ fontSize: '0.62rem', fontWeight: 800, padding: '2px 8px', borderRadius: '999px', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
+              {loan.type === 'Installment' ? `${loan.frequency} Installment` : loan.type}
+            </span>
+          </div>
           <div className="paynow-info-rows">
             <div>Remaining Balance: <strong>₱{remaining.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></div>
             {isInstallment && (
@@ -249,6 +258,8 @@ export default function PayNowModal({ loan, onClose, onPay, contacts = [], activ
             <input
               className="form-input"
               type="number"
+              min="0"
+              step="0.01"
               placeholder="Amount to Pay"
               value={amount}
               onChange={handleAmountChange}

@@ -1,6 +1,6 @@
 package com.pookiebear278.loan_tracker.service;
 
-import com.pookiebear278.loan_tracker.constant.Constant;
+
 import com.pookiebear278.loan_tracker.domain.Entry;
 import com.pookiebear278.loan_tracker.domain.enums.TransactionType;
 import com.pookiebear278.loan_tracker.exception.InvalidEntryConfigurationException;
@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -45,6 +46,10 @@ public class EntryService {
         return entryRepo.findById(id).orElseThrow(() -> new NotFoundException("Entry not found " + id));
     }
 
+    public byte[] getReceiptImage(String id) {
+        return getEntry(id).getReceiptData();
+    }
+
     public Entry createEntry(Entry entry){
         validateEntry(entry);
         resolveRelationships(entry);
@@ -53,6 +58,14 @@ public class EntryService {
 
     public Entry updateEntry(String id, Entry updated){
         Entry existing = getEntry(id);
+
+        if (updated.getStatus() == null) {
+            updated.setStatus(existing.getStatus());
+        }
+        if (updated.getArchived() == null) {
+            updated.setArchived(existing.getArchived());
+        }
+
         resolveRelationships(updated);
         validateEntry(updated);
 
@@ -69,6 +82,7 @@ public class EntryService {
         existing.setStatus(updated.getStatus());
         existing.setNotes(updated.getNotes());
         existing.setPaymentNotes(updated.getPaymentNotes());
+        existing.setArchived(updated.getArchived());
 
         return entryRepo.save(existing);
     }
@@ -80,14 +94,29 @@ public class EntryService {
     public String uploadReceipt(String id, MultipartFile file){
         log.info("Saving receipt for entry ID: {}", id);
         Entry entry = getEntry(id);
-        String photoUrl = photoFunction.apply(id, file);
-        entry.setReceipt(photoUrl);
-        entryRepo.save(entry);
-        return photoUrl;
+        try {
+            entry.setReceiptData(file.getBytes());
+            String photoUrl = ServletUriComponentsBuilder.fromCurrentContextPath()
+                    .path("/entry/image/" + id)
+                    .toUriString();
+            entry.setReceipt(photoUrl);
+            entryRepo.save(entry);
+            return photoUrl;
+        } catch (Exception ex) {
+            throw new RuntimeException("Unable to save receipt image to database: " + ex.getMessage());
+        }
     }
 
     // --- Validation ---
     private void validateEntry(Entry entry){
+        if (entry.getAmountBorrowed() == null || entry.getAmountBorrowed().compareTo(BigDecimal.ZERO) < 0) {
+            throw new InvalidEntryConfigurationException("Amount borrowed cannot be negative");
+        }
+
+        if (entry.getAmountRemaining() != null && entry.getAmountRemaining().compareTo(BigDecimal.ZERO) < 0) {
+            throw new InvalidEntryConfigurationException("Amount remaining cannot be negative");
+        }
+
         // Constraint: INSTALLMENT_EXPENSE cannot have a group borrower
         if (entry.getTransactionType() == TransactionType.INSTALLMENT_EXPENSE && entry.getBorrowerGroup() != null){
             throw new InvalidEntryConfigurationException("An installment entry cannot have a group as the borrower");
@@ -103,29 +132,7 @@ public class EntryService {
         }
     }
 
-    // --- File Helpers ---
-    private final Function<String, String> fileExtension = filename -> Optional.of(filename)
-            .filter(name -> name.contains("."))
-            .map(name -> "." + name.substring(name.lastIndexOf(".") + 1))
-            .orElse(".png");
 
-    private final BiFunction<String, MultipartFile, String> photoFunction = (id, image) ->
-    {
-        String filename = id + fileExtension.apply(image.getOriginalFilename());
-        try{
-            Path fileStorageLocation = Paths.get(Constant.PHOTO_DIRECTORY).toAbsolutePath().normalize();
-            if (!Files.exists(fileStorageLocation)){
-                Files.createDirectories(fileStorageLocation);
-            }
-            Files.copy(image.getInputStream(), fileStorageLocation.resolve(filename), REPLACE_EXISTING);
-            return ServletUriComponentsBuilder.fromCurrentContextPath()
-                    .path("/entry/image/" + filename)
-                    .toUriString();
-    }catch (Exception ex){
-            throw new RuntimeException("Unable to save image: " + ex.getMessage());
-    }
-
-    };
 
     private void resolveRelationships(Entry entry){
         if(entry.getBorrowerPerson() != null && entry.getBorrowerPerson().getId() != null) {

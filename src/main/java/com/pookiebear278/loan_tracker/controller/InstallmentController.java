@@ -40,8 +40,11 @@ public class InstallmentController {
     }
 
     @PostMapping("/skip")
-    public ResponseEntity<InstallmentDetail> skipTerm(@PathVariable String entryId) {
-        return ResponseEntity.ok(installmentService.skipTerm(entryId));
+    public ResponseEntity<InstallmentDetail> skipTerm(
+            @PathVariable String entryId,
+            @RequestParam(required = false, defaultValue = "extend") String option
+    ) {
+        return ResponseEntity.ok(installmentService.skipTerm(entryId, option));
     }
 
     @GetMapping("/statuses")

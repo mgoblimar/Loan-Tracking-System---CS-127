@@ -36,6 +36,13 @@ public class InstallmentService {
     }
 
     public InstallmentDetail createInstallmentDetail(String entryId, InstallmentDetail detail) {
+        if (detail.getPaymentTerms() == null || detail.getPaymentTerms() <= 0) {
+            throw new InvalidEntryConfigurationException("Payment terms must be greater than zero");
+        }
+        if (detail.getSkippedTerms() != null && detail.getSkippedTerms() < 0) {
+            throw new InvalidEntryConfigurationException("Skipped terms cannot be negative");
+        }
+
         Entry entry = entryService.getEntry(entryId);
         if(entry.getTransactionType() != TransactionType.INSTALLMENT_EXPENSE) {
             throw new InvalidEntryConfigurationException("Installment details can only be added to INSTALLMENT_EXPENSE entries");
@@ -64,15 +71,26 @@ public class InstallmentService {
                 () -> new NotFoundException("Installment detail not found for entry: " + entryId)
         );
 
-        existing.setStartDate(updated.getStartDate());
-        existing.setPaymentFrequency(updated.getPaymentFrequency());
-        existing.setPaymentTerms(updated.getPaymentTerms());
-        existing.setNotes(updated.getNotes());
+        if (updated.getStartDate() != null) {
+            existing.setStartDate(updated.getStartDate());
+        }
+        if (updated.getPaymentFrequency() != null) {
+            existing.setPaymentFrequency(updated.getPaymentFrequency());
+        }
+        if (updated.getPaymentTerms() != null) {
+            if (updated.getPaymentTerms() <= 0) {
+                throw new InvalidEntryConfigurationException("Payment terms must be greater than zero");
+            }
+            existing.setPaymentTerms(updated.getPaymentTerms());
+        }
+        if (updated.getNotes() != null) {
+            existing.setNotes(updated.getNotes());
+        }
 
         // Recompute per term amount when terms change
         Entry entry = entryService.getEntry(entryId);
         BigDecimal perTerm = entry.getAmountBorrowed()
-                .divide(new BigDecimal(updated.getPaymentTerms()), 4, RoundingMode.HALF_UP);
+                .divide(new BigDecimal(existing.getPaymentTerms()), 4, RoundingMode.HALF_UP);
 
         existing.setPaymentAmountPerTerm(perTerm);
 
@@ -84,21 +102,58 @@ public class InstallmentService {
         return saved;
     }
 
-    public InstallmentDetail skipTerm(String entryId){
-        InstallmentDetail detail = installmentDetailRepo.findByEntryId(entryId).orElseThrow(() -> new NotFoundException("Installment detail not found for entry: " + entryId));
+    public InstallmentDetail skipTerm(String entryId, String option) {
+        InstallmentDetail detail = installmentDetailRepo.findByEntryId(entryId)
+                .orElseThrow(() -> new NotFoundException("Installment detail not found for entry: " + entryId));
 
-        detail.setSkippedTerms(detail.getSkippedTerms() + 1);
+        Entry entry = detail.getEntry();
+        BigDecimal perTerm = detail.getPaymentAmountPerTerm();
+
+        // Calculate paid terms using CEILING division
+        int paidTerms = 0;
+        if (perTerm != null && perTerm.compareTo(BigDecimal.ZERO) > 0) {
+            int unpaidTerms = entry.getAmountRemaining().divide(perTerm, 0, RoundingMode.CEILING).intValue();
+            paidTerms = detail.getPaymentTerms() - detail.getSkippedTerms() - unpaidTerms;
+            if (paidTerms < 0) paidTerms = 0;
+        }
+
+        if ("recalculate".equalsIgnoreCase(option)) {
+            // Recalculate remaining terms: keep paymentTerms the same, but increase skippedTerms
+            detail.setSkippedTerms(detail.getSkippedTerms() + 1);
+
+            int remainingActiveTerms = detail.getPaymentTerms() - (paidTerms + detail.getSkippedTerms());
+            if (remainingActiveTerms <= 0) {
+                throw new InvalidEntryConfigurationException("Cannot recalculate remaining terms because no active terms are left. Please choose the 'Extend Maturity' option instead.");
+            }
+
+            // newPerTerm = amountRemaining / remainingActiveTerms
+            BigDecimal newPerTerm = entry.getAmountRemaining()
+                    .divide(new BigDecimal(remainingActiveTerms), 4, RoundingMode.HALF_UP);
+            detail.setPaymentAmountPerTerm(newPerTerm);
+        } else {
+            // Option "extend" (default): Increase both total terms and skipped terms by 1
+            detail.setPaymentTerms(detail.getPaymentTerms() + 1);
+            detail.setSkippedTerms(detail.getSkippedTerms() + 1);
+            // paymentAmountPerTerm remains unchanged!
+        }
+
         InstallmentDetail saved = installmentDetailRepo.save(detail);
 
-        // Recalculate next due date since skipped terms changed
-        paymentService.updateNextDueDateForInstallment(detail.getEntry(), null, null);
+        // Recalculate next due date
+        paymentService.updateNextDueDateForInstallment(entry, null, null);
 
         return saved;
     }
 
     public List<InstallmentStatus> getAllTermsStatuses(String entryId){
         InstallmentDetail detail = getInstallmentDetail(entryId);
-        int paidTerms = paymentRepo.findByEntryId(entryId).size();
+        BigDecimal perTerm = detail.getPaymentAmountPerTerm();
+        int paidTerms = 0;
+        if (perTerm != null && perTerm.compareTo(BigDecimal.ZERO) > 0) {
+            int unpaidTerms = detail.getEntry().getAmountRemaining().divide(perTerm, 0, RoundingMode.CEILING).intValue();
+            paidTerms = detail.getPaymentTerms() - detail.getSkippedTerms() - unpaidTerms;
+            if (paidTerms < 0) paidTerms = 0;
+        }
 
         List<InstallmentStatus> statuses = new ArrayList<>();
         for (int term = 1; term <= detail.getPaymentTerms(); term++) {
@@ -116,7 +171,13 @@ public class InstallmentService {
 
     private InstallmentStatus computeCurrentTermStatus(InstallmentDetail detail){
         int elapsed = InstallmentStatusCalculator.elapsedTerms(detail.getStartDate(), detail.getPaymentFrequency());
-        int paidTerms = paymentRepo.findByEntryId(detail.getEntry().getId()).size();
+        BigDecimal perTerm = detail.getPaymentAmountPerTerm();
+        int paidTerms = 0;
+        if (perTerm != null && perTerm.compareTo(BigDecimal.ZERO) > 0) {
+            int unpaidTerms = detail.getEntry().getAmountRemaining().divide(perTerm, 0, RoundingMode.CEILING).intValue();
+            paidTerms = detail.getPaymentTerms() - detail.getSkippedTerms() - unpaidTerms;
+            if (paidTerms < 0) paidTerms = 0;
+        }
 
         return InstallmentStatusCalculator.compute(
                 elapsed,
