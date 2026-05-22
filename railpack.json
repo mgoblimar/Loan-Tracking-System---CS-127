@@ -1,0 +1,7 @@
+{
+  "providers": {
+    "java": {
+      "version": "22"
+    }
+  }
+}
