@@ -1,5 +1,5 @@
 {
-  "providers": {
+  "options": {
     "java": {
       "version": "22"
     }
