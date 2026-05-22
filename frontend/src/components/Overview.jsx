@@ -645,7 +645,24 @@ export default function Overview({ loans, setLoans, contacts, groups, activePers
                   <span className={`stat-dot ${loan.direction === 'owe' ? 'dot-red' : 'dot-green'}`} />
                   <div className="loan-person-info">
                     <h4>{displayName}</h4>
-                    <p>{loan.name} | Start: {loan.startDate}{loan.dueDate ? ` | Due: ${loan.dueDate}` : ''}</p>
+                    <p>
+                      <strong>{loan.name}</strong>
+                      {loan.referenceId && (
+                        <span style={{ 
+                          fontSize: '0.72rem', 
+                          fontWeight: 600, 
+                          color: '#475569', 
+                          background: '#e2e8f0', 
+                          borderRadius: '4px', 
+                          padding: '1px 5px', 
+                          marginLeft: '6px',
+                          display: 'inline-block'
+                        }}>
+                          {loan.referenceId}
+                        </span>
+                      )}
+                      {" "}| Start: {loan.startDate}{loan.dueDate ? ` | Due: ${loan.dueDate}` : ''}
+                    </p>
                   </div>
                 </div>
                 <div className="loan-amount-cell">
@@ -672,6 +689,24 @@ export default function Overview({ loans, setLoans, contacts, groups, activePers
 
               {isExpanded && (
                 <div className="loan-row-expanded">
+                  {loan.referenceId && (
+                    <div className="expanded-reference-block" style={{ marginBottom: '1rem' }}>
+                      <span className="expanded-label">Reference ID:</span>
+                      <span style={{ 
+                        fontSize: '0.85rem', 
+                        color: '#1e293b', 
+                        fontWeight: 600, 
+                        fontFamily: 'monospace', 
+                        background: '#f1f5f9', 
+                        border: '1px solid #cbd5e1', 
+                        borderRadius: '4px', 
+                        padding: '2px 8px', 
+                        display: 'inline-block' 
+                      }}>
+                        {loan.referenceId}
+                      </span>
+                    </div>
+                  )}
                   {loan.notes && (
                     <div className="expanded-notes-block">
                       <span className="expanded-label">Notes:</span>

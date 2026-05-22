@@ -78,6 +78,7 @@ export default function Payments({ loans, setLoans, contacts, groups = [], activ
         loanDirection: loan.direction,
         loanType: loan.type,
         contactName,
+        referenceId: loan.referenceId,
         rawDate: p.date, // already formatted string, use for display
       }));
     })
@@ -170,7 +171,24 @@ export default function Payments({ loans, setLoans, contacts, groups = [], activ
               <div key={loan.id} className="payment-list-item">
                 <div className="payment-list-info">
                   <h4>{displayName}</h4>
-                  <p>{loan.name} | Start: {loan.startDate}{loan.dueDate ? ` | Due: ${loan.dueDate}` : ''}</p>
+                  <p>
+                    <strong>{loan.name}</strong>
+                    {loan.referenceId && (
+                      <span style={{ 
+                        fontSize: '0.72rem', 
+                        fontWeight: 600, 
+                        color: '#475569', 
+                        background: '#e2e8f0', 
+                        borderRadius: '4px', 
+                        padding: '1px 5px', 
+                        marginLeft: '6px',
+                        display: 'inline-block'
+                      }}>
+                        {loan.referenceId}
+                      </span>
+                    )}
+                    {" "}| Start: {loan.startDate}{loan.dueDate ? ` | Due: ${loan.dueDate}` : ''}
+                  </p>
                 </div>
                 <div className="payment-list-actions-side">
                   <div className="payment-list-amount amount-red">
@@ -202,7 +220,24 @@ export default function Payments({ loans, setLoans, contacts, groups = [], activ
               <div key={loan.id} className="payment-list-item">
                 <div className="payment-list-info">
                   <h4>{displayName}</h4>
-                  <p>{loan.name} | Start: {loan.startDate}{loan.dueDate ? ` | Due: ${loan.dueDate}` : ''}</p>
+                  <p>
+                    <strong>{loan.name}</strong>
+                    {loan.referenceId && (
+                      <span style={{ 
+                        fontSize: '0.72rem', 
+                        fontWeight: 600, 
+                        color: '#475569', 
+                        background: '#e2e8f0', 
+                        borderRadius: '4px', 
+                        padding: '1px 5px', 
+                        marginLeft: '6px',
+                        display: 'inline-block'
+                      }}>
+                        {loan.referenceId}
+                      </span>
+                    )}
+                    {" "}| Start: {loan.startDate}{loan.dueDate ? ` | Due: ${loan.dueDate}` : ''}
+                  </p>
                 </div>
                 <div className="payment-list-actions-side">
                   <div className="payment-list-amount amount-green">
@@ -250,7 +285,24 @@ export default function Payments({ loans, setLoans, contacts, groups = [], activ
             {allPayments.map((p) => (
               <div className="prev-payments-row" key={p.id}>
                 <span className="pp-date">{p.date}</span>
-                <span className="pp-loan-name">{p.loanName}</span>
+                <span className="pp-loan-name">
+                  <strong>{p.loanName}</strong>
+                  {p.referenceId && (
+                    <span style={{ 
+                      fontSize: '0.68rem', 
+                      fontWeight: 600, 
+                      color: '#475569', 
+                      background: '#e2e8f0', 
+                      borderRadius: '4px', 
+                      padding: '1px 4px', 
+                      marginLeft: '5px',
+                      display: 'inline-block',
+                      fontFamily: 'monospace'
+                    }}>
+                      {p.referenceId}
+                    </span>
+                  )}
+                </span>
                 <span className="pp-contact">{p.contactName}</span>
                 <span>
                   <span className={`pp-type-badge pp-type-${p.loanType.toLowerCase()}`}>{p.loanType}</span>

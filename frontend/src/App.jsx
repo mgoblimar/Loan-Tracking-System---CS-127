@@ -3,6 +3,7 @@ import './index.css';
 import Overview from './components/Overview';
 import Payments from './components/Payments';
 import PeopleGroups from './components/PeopleGroups';
+import Options from './components/Options';
 import { personApi, groupApi, entryApi, paymentApi, installmentApi, allocationApi } from './api';
 
 const serializeNotes = (notes, dueDate) => {
@@ -19,31 +20,6 @@ const deserializeNotes = (serializedNotes) => {
   return { notes: serializedNotes, dueDate: null };
 };
 
-const seedDB = async () => {
-  console.log('Seeding database with default contacts...');
-  const p1 = await personApi.create({ name: 'Mark Lexter De Lara', contactInfo: '09912345678' });
-  const p2 = await personApi.create({ name: 'Kilo Man', contactInfo: '09912345678' });
-  const p3 = await personApi.create({ name: 'Denise Julia', contactInfo: '09987654321' });
-
-  console.log('Seeding database with default groups...');
-  const g1 = await groupApi.create({ name: 'The Gang' });
-  const g2 = await groupApi.create({ name: 'O-Block' });
-
-  await groupApi.addMember(g1.id, p1.id);
-  await groupApi.addMember(g1.id, p2.id);
-  await groupApi.addMember(g1.id, p3.id);
-
-  await groupApi.addMember(g2.id, p1.id);
-  await groupApi.addMember(g2.id, p2.id);
-
-  return {
-    persons: [p1, p2, p3],
-    groups: [
-      { ...g1, members: [{ person: p1 }, { person: p2 }, { person: p3 }] },
-      { ...g2, members: [{ person: p1 }, { person: p2 }] }
-    ]
-  };
-};
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('Overview');
@@ -52,6 +28,7 @@ export default function App() {
   const [loans, setLoans] = useState([]);
   const [activePersonId, setActivePersonId] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [alertConfig, setAlertConfig] = useState(null); // { message: string, type: 'info' | 'error' | 'success' }
 
   const hydrateLoans = async (entries, activeId, contactsList) => {
     return await Promise.all(
@@ -152,12 +129,6 @@ export default function App() {
       let pList = await personApi.getAll();
       let gList = await groupApi.getAll();
 
-      if (pList.length === 0) {
-        const seeded = await seedDB();
-        pList = seeded.persons;
-        gList = seeded.groups;
-      }
-
       const mappedContacts = pList.map((p) => ({
         id: p.id,
         name: p.name,
@@ -175,8 +146,8 @@ export default function App() {
       let activeId = currentActiveId;
       if (!activeId || !mappedContacts.find((c) => c.id === activeId)) {
         activeId = mappedContacts[0]?.id || null;
-        setActivePersonId(activeId);
       }
+      setActivePersonId(activeId);
 
       const entriesPage = await entryApi.getAll(0, 1000);
       const entries = entriesPage.content || [];
@@ -184,6 +155,39 @@ export default function App() {
       setLoans(hydrated);
     } catch (err) {
       console.error('Error syncing backend database with frontend', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClearAllData = async () => {
+    if (!window.confirm('⚠️ WARNING: This will permanently delete ALL entries, payments, groups, and contacts in the database. This action is irreversible. Proceed?')) {
+      return;
+    }
+    setLoading(true);
+    try {
+      const entriesPage = await entryApi.getAll(0, 1000);
+      const entries = entriesPage.content || [];
+      for (const entry of entries) {
+        await entryApi.delete(entry.id).catch(err => console.error(`Error deleting entry ${entry.id}:`, err));
+      }
+
+      const groupsList = await groupApi.getAll();
+      for (const group of groupsList) {
+        await groupApi.delete(group.id).catch(err => console.error(`Error deleting group ${group.id}:`, err));
+      }
+
+      const personsList = await personApi.getAll();
+      for (const person of personsList) {
+        await personApi.delete(person.id).catch(err => console.error(`Error deleting person ${person.id}:`, err));
+      }
+
+      setActivePersonId(null);
+      await refreshAllData(null);
+      alert('Success: All demo data has been cleared!');
+    } catch (err) {
+      console.error('Error clearing database data:', err);
+      alert('Failed to clear data: ' + err.message);
     } finally {
       setLoading(false);
     }
@@ -200,10 +204,29 @@ export default function App() {
     }
   }, [activePersonId]);
 
+  useEffect(() => {
+    const originalAlert = window.alert;
+    window.alert = (message) => {
+      let type = 'info';
+      const lowercaseMsg = String(message).toLowerCase();
+      if (lowercaseMsg.includes('failed') || lowercaseMsg.includes('error') || lowercaseMsg.includes('must') || lowercaseMsg.includes('cannot') || lowercaseMsg.includes('please') || lowercaseMsg.includes('required')) {
+        type = 'error';
+      } else if (lowercaseMsg.includes('success') || lowercaseMsg.includes('cleared') || lowercaseMsg.includes('saved')) {
+        type = 'success';
+      }
+      setAlertConfig({ message: String(message), type });
+    };
+
+    return () => {
+      window.alert = originalAlert;
+    };
+  }, []);
+
   const navItems = [
     { label: 'Overview', icon: '📊' },
     { label: 'Payments', icon: '💰' },
     { label: 'People & Groups', icon: '👥' },
+    { label: 'Options', icon: '⚙️' },
   ];
 
   if (loading) {
@@ -223,18 +246,86 @@ export default function App() {
       <aside className="sidebar">
         <div className="sidebar-logo">TrackIt</div>
         
-        {/* Active Profile Dropdown */}
-        <div className="active-profile-box" style={{ padding: '0 1rem 1.5rem 1rem', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', marginBottom: '1.5rem' }}>
-          <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', tracking: '0.05em', color: '#64748b', display: 'block', marginBottom: '0.5rem' }}>Acting As (Self):</label>
-          <select 
-            value={activePersonId || ''} 
-            onChange={(e) => setActivePersonId(e.target.value)}
-            style={{ width: '100%', padding: '0.6rem 0.8rem', borderRadius: '8px', background: '#1e293b', border: '1px solid #334155', color: '#f8fafc', fontSize: '0.85rem', outline: 'none', cursor: 'pointer' }}
-          >
-            {contacts.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
+        {/* Active Profile Selection Box */}
+        <div className="active-profile-box" style={{ 
+          padding: '1rem', 
+          background: '#f8fafc',
+          border: '1px solid #e2e8f0', 
+          borderRadius: '12px',
+          marginBottom: '1.5rem',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+        }}>
+          <label style={{ 
+            fontSize: '0.7rem', 
+            textTransform: 'uppercase', 
+            letterSpacing: '0.05em', 
+            color: '#64748b', 
+            display: 'block', 
+            marginBottom: '0.5rem',
+            fontWeight: 700
+          }}>
+            👤 Current User (Self)
+          </label>
+          {contacts.length > 0 ? (
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <select 
+                value={activePersonId || ''} 
+                onChange={(e) => {
+                  const val = e.target.value;
+                  const parsedVal = /^\d+$/.test(val) ? Number(val) : val;
+                  setActivePersonId(parsedVal);
+                }}
+                style={{ 
+                  flex: 1, 
+                  padding: '0.5rem 0.75rem', 
+                  borderRadius: '8px', 
+                  background: '#ffffff', 
+                  border: '1px solid #cbd5e1', 
+                  color: '#0f172a', 
+                  fontSize: '0.85rem', 
+                  fontWeight: 600,
+                  outline: 'none', 
+                  cursor: 'pointer',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                  transition: 'border-color 0.15s ease'
+                }}
+              >
+                {contacts.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <div style={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: '0.5rem', 
+              alignItems: 'center', 
+              textAlign: 'center',
+              padding: '0.5rem 0'
+            }}>
+              <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: 500 }}>No users registered yet</span>
+              <button
+                onClick={() => setActiveTab('People & Groups')}
+                style={{
+                  background: '#3b82f6',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '6px',
+                  padding: '0.35rem 0.75rem',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'background 0.15s ease',
+                  boxShadow: '0 1px 2px rgba(59, 130, 246, 0.2)'
+                }}
+                onMouseOver={(e) => e.target.style.background = '#2563eb'}
+                onMouseOut={(e) => e.target.style.background = '#3b82f6'}
+              >
+                ➕ Create User
+              </button>
+            </div>
+          )}
         </div>
 
         {navItems.map((item) => (
@@ -250,36 +341,238 @@ export default function App() {
       </aside>
 
       <main className="main-content">
-        {activeTab === 'Overview' && (
-          <Overview
-            loans={loans}
-            setLoans={setLoans}
-            contacts={contacts}
-            groups={groups}
-            activePersonId={activePersonId}
-            refreshAllData={refreshAllData}
-          />
-        )}
-        {activeTab === 'Payments' && (
-          <Payments 
-            loans={loans} 
-            setLoans={setLoans} 
-            contacts={contacts} 
-            groups={groups}
-            activePersonId={activePersonId}
-            refreshAllData={refreshAllData}
-          />
-        )}
-        {activeTab === 'People & Groups' && (
-          <PeopleGroups
-            contacts={contacts}
-            setContacts={setContacts}
-            groups={groups}
-            setGroups={setGroups}
-            refreshAllData={refreshAllData}
-          />
+        {contacts.length === 0 && (activeTab === 'Overview' || activeTab === 'Payments') ? (
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: '70vh',
+            textAlign: 'center',
+            padding: '2rem'
+          }}>
+            <div style={{
+              fontSize: '4.5rem',
+              marginBottom: '1.5rem',
+              animation: 'bounce 2s infinite'
+            }}>
+              🚀
+            </div>
+            <h1 style={{
+              fontSize: '2rem',
+              fontWeight: '800',
+              color: '#0f172a',
+              marginBottom: '0.75rem'
+            }}>
+              Welcome to TrackIt!
+            </h1>
+            <p style={{
+              color: '#475569',
+              fontSize: '1.05rem',
+              maxWidth: '500px',
+              lineHeight: '1.6',
+              marginBottom: '2rem'
+            }}>
+              It looks like there are no users in the database yet. To start tracking loans, straight expenses, installments, or shared group bills, you need to create at least one user to act as yourself and others.
+            </p>
+            
+            <div style={{
+              background: '#ffffff',
+              border: '1px solid #e2e8f0',
+              borderRadius: '16px',
+              padding: '1.5rem 2rem',
+              maxWidth: '480px',
+              textAlign: 'left',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+              marginBottom: '2rem'
+            }}>
+              <h3 style={{ margin: '0 0 1rem 0', fontSize: '1rem', color: '#1e293b', fontWeight: '700' }}>
+                Follow these simple steps:
+              </h3>
+              <ul style={{ margin: 0, paddingLeft: '1.25rem', color: '#475569', fontSize: '0.9rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <li>
+                  Go to the <strong style={{ color: '#0f172a' }}>People & Groups</strong> tab.
+                </li>
+                <li>
+                  Click <strong style={{ color: '#3b82f6' }}>+ Add Person</strong> to register yourself and your contacts.
+                </li>
+                <li>
+                  Select your profile under <strong style={{ color: '#0f172a' }}>Current User (Self)</strong> in the sidebar to start creating and managing entries!
+                </li>
+              </ul>
+            </div>
+
+            <button
+              onClick={() => setActiveTab('People & Groups')}
+              className="btn"
+              style={{
+                background: '#3b82f6',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '12px',
+                padding: '0.8rem 2rem',
+                fontSize: '1rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+                boxShadow: '0 4px 12px rgba(59, 130, 246, 0.25)'
+              }}
+              onMouseOver={(e) => {
+                e.target.style.background = '#2563eb';
+                e.target.style.transform = 'translateY(-1px)';
+              }}
+              onMouseOut={(e) => {
+                e.target.style.background = '#3b82f6';
+                e.target.style.transform = 'translateY(0)';
+              }}
+            >
+              👉 Get Started Now
+            </button>
+            <style dangerouslySetInnerHTML={{ __html: '@keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }' }} />
+          </div>
+        ) : (
+          <>
+            {activeTab === 'Overview' && (
+              <Overview
+                loans={loans}
+                setLoans={setLoans}
+                contacts={contacts}
+                groups={groups}
+                activePersonId={activePersonId}
+                refreshAllData={refreshAllData}
+              />
+            )}
+            {activeTab === 'Payments' && (
+              <Payments 
+                loans={loans} 
+                setLoans={setLoans} 
+                contacts={contacts} 
+                groups={groups}
+                activePersonId={activePersonId}
+                refreshAllData={refreshAllData}
+              />
+            )}
+            {activeTab === 'People & Groups' && (
+              <PeopleGroups
+                contacts={contacts}
+                setContacts={setContacts}
+                groups={groups}
+                setGroups={setGroups}
+                refreshAllData={refreshAllData}
+              />
+            )}
+            {activeTab === 'Options' && (
+              <Options
+                handleClearAllData={handleClearAllData}
+              />
+            )}
+          </>
         )}
       </main>
+
+      {alertConfig && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(15, 23, 42, 0.4)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 99999,
+          animation: 'fadeIn 0.2s ease-out'
+        }}>
+          <div style={{
+            background: '#ffffff',
+            borderRadius: '16px',
+            width: '90%',
+            maxWidth: '400px',
+            padding: '2rem 1.75rem',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+            textAlign: 'center',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            animation: 'scaleUp 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)'
+          }}>
+            {/* Type Icon */}
+            <div style={{
+              width: '60px',
+              height: '60px',
+              borderRadius: '50%',
+              background: alertConfig.type === 'success' ? '#ecfdf5' : alertConfig.type === 'error' ? '#fef2f2' : '#eff6ff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '2rem',
+              marginBottom: '1.25rem',
+              border: alertConfig.type === 'success' ? '1px solid #d1fae5' : alertConfig.type === 'error' ? '1px solid #fee2e2' : '1px solid #dbeafe'
+            }}>
+              {alertConfig.type === 'success' ? '✅' : alertConfig.type === 'error' ? '⚠️' : 'ℹ️'}
+            </div>
+
+            {/* Title */}
+            <h3 style={{
+              fontSize: '1.25rem',
+              fontWeight: 800,
+              color: '#0f172a',
+              margin: '0 0 0.5rem 0'
+            }}>
+              {alertConfig.type === 'success' ? 'Success!' : alertConfig.type === 'error' ? 'Notice' : 'Information'}
+            </h3>
+
+            {/* Message */}
+            <p style={{
+              fontSize: '0.925rem',
+              color: '#475569',
+              lineHeight: '1.5',
+              margin: '0 0 1.5rem 0',
+              wordBreak: 'break-word'
+            }}>
+              {alertConfig.message}
+            </p>
+
+            {/* Dismiss Button */}
+            <button
+              onClick={() => setAlertConfig(null)}
+              style={{
+                width: '100%',
+                padding: '0.65rem 1.5rem',
+                background: alertConfig.type === 'success' ? '#10b981' : alertConfig.type === 'error' ? '#ef4444' : '#3b82f6',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '10px',
+                fontWeight: 600,
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                transition: 'background 0.15s ease',
+                boxShadow: alertConfig.type === 'success' ? '0 4px 10px rgba(16, 185, 129, 0.2)' : alertConfig.type === 'error' ? '0 4px 10px rgba(239, 68, 68, 0.2)' : '0 4px 10px rgba(59, 130, 246, 0.2)'
+              }}
+              onMouseOver={(e) => {
+                e.target.style.background = alertConfig.type === 'success' ? '#059669' : alertConfig.type === 'error' ? '#dc2626' : '#2563eb';
+              }}
+              onMouseOut={(e) => {
+                e.target.style.background = alertConfig.type === 'success' ? '#10b981' : alertConfig.type === 'error' ? '#ef4444' : '#3b82f6';
+              }}
+            >
+              OK
+            </button>
+          </div>
+          <style dangerouslySetInnerHTML={{ __html: `
+            @keyframes fadeIn {
+              from { opacity: 0; }
+              to { opacity: 1; }
+            }
+            @keyframes scaleUp {
+              from { transform: scale(0.9); opacity: 0; }
+              to { transform: scale(1); opacity: 1; }
+            }
+          `}} />
+        </div>
+      )}
     </div>
   );
 }
