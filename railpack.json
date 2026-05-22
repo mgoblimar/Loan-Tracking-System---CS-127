@@ -1,7 +1,6 @@
 {
-  "options": {
-    "java": {
-      "version": "22"
-    }
+  "$schema": "https://schema.railpack.com",
+  "packages": {
+    "jdk": "22"
   }
 }
