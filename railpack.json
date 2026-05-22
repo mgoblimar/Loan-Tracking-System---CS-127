@@ -1,7 +1,5 @@
 {
-  "options": {
-    "java": {
-      "version": "22"
-    }
+  "packages": {
+    "java": "22"
   }
 }
