@@ -600,41 +600,77 @@ body {
   margin-bottom: 0.75rem;
 }
 
-.form-input,
-.form-select {
+.form-input {
   width: 100%;
   padding: 0.7rem 1rem;
-  border: 1.5px solid #ddd;
+  border: 1.5px solid #e2e8f0;
   border-radius: 10px;
   font-size: 0.9rem;
   font-family: 'Inter', sans-serif;
-  background: #fafafa;
-  color: #111;
+  background: #f8fafc;
+  color: #0f172a;
   outline: none;
-  transition: border-color 0.15s;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.form-select {
+  width: 100%;
+  padding: 0.7rem 2.5rem 0.7rem 1rem;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-family: 'Inter', sans-serif;
+  background: #f8fafc;
+  color: #0f172a;
+  outline: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   appearance: none;
   -webkit-appearance: none;
+  cursor: pointer;
+}
+
+.form-input:hover,
+.form-select:hover {
+  border-color: #cbd5e1;
+  background: #f1f5f9;
 }
 
 .form-input:focus,
 .form-select:focus {
-  border-color: #999;
-  background: #fff;
+  border-color: #0f172a;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.08);
 }
 
 .select-wrapper {
   position: relative;
+  display: block;
+  width: 100%;
 }
 
 .select-wrapper::after {
-  content: '⌄';
+  content: "";
   position: absolute;
-  right: 12px;
+  right: 14px;
   top: 50%;
-  transform: translateY(-60%);
-  font-size: 1rem;
-  color: #888;
+  transform: translateY(-50%);
+  width: 10px;
+  height: 6px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 10 6'%3E%3Cpath stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.8' d='m1 1 4 4 4-4'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
   pointer-events: none;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s;
+  opacity: 0.8;
+}
+
+.select-wrapper:hover::after {
+  opacity: 1;
+}
+
+.select-wrapper:focus-within::after {
+  transform: translateY(-50%) rotate(180deg);
+  opacity: 1;
 }
 
 .form-row {
@@ -653,8 +689,7 @@ body {
 }
 
 .type-select {
-  width: auto;
-  min-width: 160px;
+  width: 100%;
 }
 
 .receipt-btn {

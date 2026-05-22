@@ -10,41 +10,6 @@ export default function Payments({ loans, setLoans, contacts, groups = [], activ
   const getContact = (id) => contacts.find((c) => c.id === id);
 
   const getLoanBalance = (loan, activeId) => {
-    const isGroup = loan.type === 'Group';
-    let userShare = 0;
-    let hasUserShare = false;
-    
-    if (isGroup && loan.splits) {
-      const userSplitVal = loan.splits[activeId];
-      if (userSplitVal !== undefined) {
-        hasUserShare = true;
-        const rawSplit = parseFloat(userSplitVal) || 0;
-        userShare = loan.splitMethod === 'Divide Percent'
-          ? (rawSplit / 100) * loan.amount
-          : rawSplit;
-      }
-    }
-    
-    if (isGroup && hasUserShare) {
-      if (loan.direction === 'owed') {
-        const effTotal = loan.amount - userShare;
-        const effPaid = loan.paidAmount;
-        return {
-          total: effTotal,
-          paid: effPaid,
-          remaining: Math.max(0, effTotal - effPaid)
-        };
-      } else {
-        const effTotal = userShare;
-        const effPaid = loan.paidAmount;
-        return {
-          total: effTotal,
-          paid: effPaid,
-          remaining: Math.max(0, effTotal - effPaid)
-        };
-      }
-    }
-    
     return {
       total: loan.amount,
       paid: loan.paidAmount,

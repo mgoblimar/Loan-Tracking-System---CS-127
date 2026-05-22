@@ -122,41 +122,6 @@ export default function Overview({ loans, setLoans, contacts, groups, activePers
   const getContact = (id) => contacts.find((c) => c.id === id);
 
   const getLoanBalance = (loan, activeId) => {
-    const isGroup = loan.type === 'Group';
-    let userShare = 0;
-    let hasUserShare = false;
-    
-    if (isGroup && loan.splits) {
-      const userSplitVal = loan.splits[activeId];
-      if (userSplitVal !== undefined) {
-        hasUserShare = true;
-        const rawSplit = parseFloat(userSplitVal) || 0;
-        userShare = loan.splitMethod === 'Divide Percent'
-          ? (rawSplit / 100) * loan.amount
-          : rawSplit;
-      }
-    }
-    
-    if (isGroup && hasUserShare) {
-      if (loan.direction === 'owed') {
-        const effTotal = loan.amount - userShare;
-        const effPaid = loan.paidAmount;
-        return {
-          total: effTotal,
-          paid: effPaid,
-          remaining: Math.max(0, effTotal - effPaid)
-        };
-      } else {
-        const effTotal = userShare;
-        const effPaid = loan.paidAmount;
-        return {
-          total: effTotal,
-          paid: effPaid,
-          remaining: Math.max(0, effTotal - effPaid)
-        };
-      }
-    }
-    
     return {
       total: loan.amount,
       paid: loan.paidAmount,
@@ -767,74 +732,25 @@ export default function Overview({ loans, setLoans, contacts, groups, activePers
           const isFullyPaid = getLoanBalance(loan, activePersonId).remaining === 0;
 
           const isGroup = loan.type === 'Group';
-          let hasUserShare = false;
-          let userSharePercent = 0;
-          let userShareAmount = 0;
-          if (isGroup && loan.splits) {
-            const userSplitVal = loan.splits[activePersonId];
-            if (userSplitVal !== undefined) {
-              hasUserShare = true;
-              const rawSplit = parseFloat(userSplitVal) || 0;
-              if (loan.splitMethod === 'Divide Percent') {
-                userSharePercent = rawSplit;
-                userShareAmount = (rawSplit / 100) * loan.amount;
-              } else {
-                userShareAmount = rawSplit;
-                userSharePercent = loan.amount > 0 ? (rawSplit / loan.amount) * 100 : 0;
-              }
-            }
-          }
 
           const displayName = isGroup
             ? (groups.find((g) => String(g.id) === String(loan.groupId))?.name || 'Unknown Group')
             : (contact?.name || 'Unknown');
 
-          const progressTrack = (() => {
-            if (isGroup && hasUserShare) {
-              const othersPaidPercent = loan.amount > 0 ? (loan.paidAmount / loan.amount) * 100 : 0;
-              return (
-                <div className="progress-bar-track multi-segment">
-                  <div
-                    className="progress-bar-fill yellow"
-                    style={{ width: `${userSharePercent}%` }}
-                    title={`Your Share: ₱${userShareAmount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                  >
-                    Your Share
-                  </div>
-                  {othersPaidPercent > 0 && (
-                    <div
-                      className={`progress-bar-fill ${isFullyPaid ? 'green' : 'red'}`}
-                      style={{ width: `${othersPaidPercent}%` }}
-                      title={`Others Paid: ₱${loan.paidAmount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                    >
-                      {Math.round(othersPaidPercent)}%
-                    </div>
-                  )}
-                </div>
-              );
-            }
-            return (
-              <div className="progress-bar-track">
-                <div
-                  className={`progress-bar-fill ${isFullyPaid ? 'green' : 'red'}`}
-                  style={{ width: `${progress}%` }}
-                >
-                  {progress}%
-                </div>
+          const progressTrack = (
+            <div className="progress-bar-track">
+              <div
+                className={`progress-bar-fill ${isFullyPaid ? 'green' : 'red'}`}
+                style={{ width: `${progress}%` }}
+              >
+                {progress}%
               </div>
-            );
-          })();
+            </div>
+          );
 
-          const progressLabel = (() => {
-            if (loan.type === 'Installment') {
-              return `${loan.termsPaid || 0}/${loan.totalTerms} terms paid`;
-            }
-            if (isGroup && hasUserShare) {
-              const displayTotal = loan.amount - userShareAmount;
-              return `₱${loan.paidAmount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / ₱${displayTotal.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} paid`;
-            }
-            return `₱${loan.paidAmount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / ₱${loan.amount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} paid`;
-          })();
+          const progressLabel = loan.type === 'Installment'
+            ? `${loan.termsPaid || 0}/${loan.totalTerms} terms paid`
+            : `₱${loan.paidAmount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / ₱${loan.amount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} paid`;
 
           return (
             <div className={`loan-row ${isExpanded ? 'loan-row-open' : ''}`} key={loan.id}>

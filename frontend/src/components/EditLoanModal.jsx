@@ -249,18 +249,20 @@ export default function EditLoanModal({ loan, onClose, onEdit, contacts, groups 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', background: '#f0fdf4', padding: '16px', borderRadius: '10px', border: '1px solid #bbf7d0', margin: 0 }}>
                 
                 {/* Cycle frequency */}
-                <div className="select-wrapper">
+                <div>
                   <label className="form-label-sub" style={{ display: 'block', marginBottom: '6px', fontWeight: 700, fontSize: '0.88rem', color: '#166534' }}>
                     🔄 Billing Cycle Frequency
                   </label>
-                  <select
-                    className="form-select"
-                    value={form.frequency}
-                    onChange={(e) => set('frequency', e.target.value)}
-                    style={{ width: '100%', padding: '10px 12px', fontSize: '0.9rem', borderRadius: '8px', background: '#fff' }}
-                  >
-                    {FREQUENCIES.map((f) => <option key={f}>{f}</option>)}
-                  </select>
+                  <div className="select-wrapper">
+                    <select
+                      className="form-select"
+                      value={form.frequency}
+                      onChange={(e) => set('frequency', e.target.value)}
+                      style={{ width: '100%', padding: '10px 12px', fontSize: '0.9rem', borderRadius: '8px', background: '#fff' }}
+                    >
+                      {FREQUENCIES.map((f) => <option key={f}>{f}</option>)}
+                    </select>
+                  </div>
                 </div>
 
                 {/* Total Terms */}
